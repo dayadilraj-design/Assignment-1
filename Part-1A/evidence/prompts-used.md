@@ -121,3 +121,5 @@ My notes on what analyze found and what I changed:
 
 - `.harness/run_harness.py` and `pytest.ini` were drafted with AI assistance (Claude) and reviewed by me. They run three gates: `ruff check src tests`, `bandit -r src -ll -q`, `pytest tests -q`, and write structured results under `evidence/harness-results/`.
 - Tests under `tests/` are derived from spec.md (AC-01 to AC-22) and the plan's AC-to-test table, drafted with AI assistance and reviewed by me against the spec.
+
+the tests and harness were drafted with Claude’s help and reviewed by me (Dilraj).
