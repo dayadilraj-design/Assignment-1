@@ -4,9 +4,9 @@ import json
 from pathlib import Path
 
 import pytest
-from reminder_agent.client import ServiceError
 
 from reminder_agent import cli
+from reminder_agent.client import ServiceError
 
 PART_ROOT = Path(__file__).resolve().parents[1]
 DATASET_PATH = PART_ROOT / "evals" / "dataset.json"
@@ -131,6 +131,49 @@ def test_harness_invokes_cli_main_once_per_case_and_captures_contract(
     serialized_evidence = evidence_path.read_text(encoding="utf-8")
     assert secret not in serialized_evidence
     assert "fake-model" in serialized_evidence
+
+
+def test_harness_loads_model_from_dotenv_without_disclosing_api_key(
+    tmp_path, monkeypatch
+) -> None:
+    harness = load_harness()
+    monkeypatch.chdir(tmp_path)
+    secret = "temporary-test-key-not-a-credential"
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    monkeypatch.delenv("LLM_MODEL", raising=False)
+    (tmp_path / ".env").write_text(
+        f"GEMINI_API_KEY={secret}\nLLM_MODEL=dotenv-test-model\n",
+        encoding="utf-8",
+    )
+    dataset_path = tmp_path / "dataset.json"
+    dataset_path.write_text(
+        json.dumps(
+            [
+                {
+                    "id": "empty",
+                    "category": "malformed",
+                    "text": "",
+                    "now": "2026-11-11T09:00:00",
+                    "expected": {
+                        "outcome": "invalid_input",
+                        "exit_code": 1,
+                        "stdout": "",
+                    },
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+    evidence_path = tmp_path / "eval-results.json"
+
+    report = harness.run_evaluation(dataset_path, evidence_path=evidence_path)
+    serialized_report = json.dumps(report)
+    serialized_evidence = evidence_path.read_text(encoding="utf-8")
+
+    assert report["model"] == "dotenv-test-model"
+    assert "dotenv-test-model" in serialized_evidence
+    assert secret not in serialized_report
+    assert secret not in serialized_evidence
 
 
 def test_harness_does_not_call_core_run_directly() -> None:

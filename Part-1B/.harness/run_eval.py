@@ -1,7 +1,6 @@
 import contextlib
 import io
 import json
-import os
 import re
 import sys
 from collections.abc import Callable, Mapping, Sequence
@@ -69,11 +68,17 @@ def _load_runtime() -> dict[str, Any]:
         sys.path.insert(0, str(SOURCE_ROOT))
 
     from reminder_agent import cli, validation
-    from reminder_agent.client import default_transport
+    from reminder_agent.client import (
+        ConfigurationError,
+        default_transport,
+        load_settings,
+    )
 
     return {
         "cli": cli,
+        "ConfigurationError": ConfigurationError,
         "default_transport": default_transport,
+        "load_settings": load_settings,
         "validation": validation,
     }
 
@@ -495,6 +500,10 @@ def run_evaluation(
     model_name: str | None = None,
     settings: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
+    resolved_model_name = model_name
+    if resolved_model_name is None:
+        resolved_model_name = _load_runtime()["load_settings"]().model
+
     try:
         dataset = json.loads(dataset_path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
@@ -516,7 +525,7 @@ def run_evaluation(
     )
     overall = overall_status(mean_score, results)
     report: dict[str, Any] = {
-        "model": model_name if model_name is not None else os.environ.get("LLM_MODEL"),
+        "model": resolved_model_name,
         "settings": _safe_settings(settings),
         "cases": results,
         "mean_case_score": mean_score,
@@ -539,9 +548,11 @@ def run_evaluation(
 
 
 def main() -> int:
-    model_name = os.environ.get("LLM_MODEL")
-    if not model_name:
-        print("Evaluation error: LLM_MODEL must be configured.", file=sys.stderr)
+    runtime = _load_runtime()
+    try:
+        model_name = runtime["load_settings"]().model
+    except runtime["ConfigurationError"] as exc:
+        print(f"Evaluation error: {exc}", file=sys.stderr)
         return 1
     report = run_evaluation(
         DEFAULT_DATASET_PATH,
