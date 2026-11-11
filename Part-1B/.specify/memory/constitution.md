@@ -1,9 +1,12 @@
 <!--
 Sync Impact Report
-Version change: unratified template -> 1.0.0
-Modified principles: None; the five template principle slots are defined below.
-Added sections: Operational Constraints; Quality and Evaluation Workflow.
+Version change: 1.0.0 -> 1.1.0
+Modified principles/sections:
+- IV. Credential and Service Boundaries (expanded; title unchanged)
+- Quality and Evaluation Workflow (expanded; title unchanged)
+Added sections: None.
 Removed sections: None.
+Follow-up TODOs: None.
 -->
 
 # Natural-Language Reminder Agent Constitution
@@ -34,7 +37,15 @@ git-ignored. It MUST never be hard-coded, logged, printed, or committed. The mod
 name MUST come from `LLM_MODEL`. Model calls MUST use a fixed temperature of `0.2`,
 a 30-second timeout, and no more than three total attempts, retrying only temporary
 HTTP 429 and 503 responses. Service or network failures MUST be reported separately
-from application or evaluation failures.
+from application or evaluation failures. The evaluation harness MUST report each
+such failure, including a timeout, network error, or HTTP 429/503 response after the
+allowed attempts, as a separate `ERROR` status for that case. Such a case MUST NOT
+count as an application `FAIL` or `PASS`. If any such service error occurs, the run
+result MUST clearly state that it is inconclusive.
+
+The coding agent MUST NOT read, print, or modify the `.env` file or any credential
+value. It MAY create or edit `.env.example` only with placeholders and no
+credential values.
 
 ### V. Simplicity and Safe Implementation
 Implementations MUST prefer the simplest maintainable design that satisfies the
@@ -72,6 +83,13 @@ removed, edited, lowered, or disabled by the coding agent. Changes are permitted
 only through a documented specification change made using the Spec Kit artifacts,
 with change history retained.
 
+The evaluation dataset MUST contain at least 15 cases covering normal, boundary,
+ambiguous, missing-information, malformed, and adversarial inputs. If a service
+error occurs, the affected case MUST receive a separate `ERROR` status and the run
+result MUST state clearly that the evaluation is inconclusive, not a PASS or FAIL.
+Each evaluation run MUST end with a human `ACCEPT` or `REJECT` decision. The
+decision and a short justification MUST be recorded in `evidence/harness-log.md`.
+
 For each set of evaluation failures, automated repair MUST be limited to at most
 two attempts. The first generated implementation MUST be preserved with the
 `1B-initial-generation` tag before any repair. A human MUST record evaluation and
@@ -90,4 +108,4 @@ guidance, and PATCH for clarifications and non-semantic refinements. Compliance
 MUST be reviewed when specifications or implementation change and before final
 evaluation; the named quality and evaluation gates above are mandatory.
 
-**Version**: 1.0.0 | **Ratified**: 2026-11-11 | **Last Amended**: 2026-11-11
+**Version**: 1.1.0 | **Ratified**: 2026-11-11 | **Last Amended**: 2026-11-11

@@ -23,3 +23,14 @@ Identify measurable quality standards.
 
 ### My notes
 1. Copilot left a TODO(RATIFICATION_DATE) in the constitution. I replaced it with 2026-11-11 by hand.
+2. **Push blocked by GitHub push protection, and how I fixed it.**
+   - **What happened:** `git push` was rejected with `error: failed to push some refs`. GitHub secret scanning reported "Push cannot contain secrets" and flagged a *GCP API Key Bound to a Service Account* in commit `87398da5017cc1518db0216ba33d62f58deaf01f`, at `Part-1B/.env.example:1`. The `.env.example` in that earlier commit had a real-looking key on the first line instead of a placeholder.
+   - **Why it matters:** The key lived in a local commit's history. Changing the file afterwards would not have helped, because GitHub scans every commit being pushed, not just the latest version of the file.
+   - **Fix (history rewrite, not an "allow secret" bypass):**
+     1. Checked that the current file only has the placeholder: `Select-String -Path .env.example -Pattern "replace_with_your_key" -Quiet` returned `True`.
+     2. `git reset --soft origin/main` undid my local commits but kept all the changes staged, so the commit with the key was no longer part of what I push.
+     3. `git add .` re-staged everything with the corrected `.env.example`.
+     4. Verified what would be committed with `git show ":./.env.example"`. It showed only `GEMINI_API_KEY=replace_with_your_key` and `LLM_MODEL=replace_with_available_model_name`. `git status --short` showed the three expected files (`.env.example`, `.specify/memory/constitution.md`, `evidence/prompts-used.md`).
+     5. `git commit -m "1B: constitution"` created one clean commit (`b139f74`).
+     6. `git push` succeeded: `4eb9fae..b139f74  main -> main`.
+   - **Follow-up:** I did not use GitHub's "allow this secret" URL. Because the push was blocked, the key never reached GitHub. Since it was a real-looking key, I will revoke or rotate it in Google Cloud and keep only placeholders in `.env.example`. The real key stays in `.env`, which is git-ignored.
