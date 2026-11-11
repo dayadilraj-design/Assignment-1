@@ -1,50 +1,93 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+<!--
+Sync Impact Report
+Version change: unratified template -> 1.0.0
+Modified principles: None; the five template principle slots are defined below.
+Added sections: Operational Constraints; Quality and Evaluation Workflow.
+Removed sections: None.
+-->
+
+# Natural-Language Reminder Agent Constitution
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. Standard-Library Runtime
+The application MUST run on Python 3.12 and use only the Python standard library at
+runtime. Model requests MUST use HTTPS through `urllib`; runtime third-party packages
+are prohibited. This keeps deployment and runtime behavior small and reproducible.
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+### II. Stable, Validated Contract
+The application MUST convert unstructured reminder requests into JSON conforming to
+the stable schema and allowed values defined by the feature specification. Model
+wording may vary, but schema structure, allowed values, and safety rules MUST NOT.
+Every model result MUST be validated before it is returned or acted upon; invalid
+results MUST NOT be treated as successful reminders.
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+### III. Safe Clarification and Refusal
+When mandatory information is missing, the application MUST request clarification
+instead of guessing. Malicious, unrelated, or instruction-override requests MUST NOT
+produce an executable reminder or tool action. Such inputs MUST be handled as
+non-executable outcomes permitted by the specified schema.
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+### IV. Credential and Service Boundaries
+The API key MUST be read only from `GEMINI_API_KEY` or a local `.env` file that is
+git-ignored. It MUST never be hard-coded, logged, printed, or committed. The model
+name MUST come from `LLM_MODEL`. Model calls MUST use a fixed temperature of `0.2`,
+a 30-second timeout, and no more than three total attempts, retrying only temporary
+HTTP 429 and 503 responses. Service or network failures MUST be reported separately
+from application or evaluation failures.
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+### V. Simplicity and Safe Implementation
+Implementations MUST prefer the simplest maintainable design that satisfies the
+specified contract. Dynamic execution and unsafe serialization mechanisms MUST NOT
+be introduced. In particular, `eval`, `exec`, `pickle`, and `shell=True` are
+prohibited; `# noqa` and `# nosec` suppressions are also prohibited.
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+## Operational Constraints
+The project MUST target Python 3.12. The application runtime MUST use only the
+standard library, including `urllib` for HTTPS model requests. The local `.env`
+file, when used, MUST be excluded by `.gitignore`. Credentials MUST NOT appear in
+source control, terminal output, or application logs.
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+Model generation settings MUST remain fixed at temperature `0.2`, timeout 30
+seconds, and at most three total attempts for HTTP 429 or 503 responses. Other
+failures MUST NOT be retried under this policy. Missing required request data MUST
+lead to clarification; untrusted model output MUST be validated against the
+specification before it is accepted. Refused or unrelated inputs MUST have no
+executable reminder or tool-action effect.
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
+## Quality and Evaluation Workflow
+The quality gate MUST pass all of these checks:
 
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+- `ruff check src tests .harness evals` reports zero errors.
+- `bandit -r src -ll` reports zero medium or high findings.
+- Source contains no `eval`, `exec`, `pickle`, or `shell=True`, and no `# noqa` or
+  `# nosec` suppressions.
+
+A single evaluation harness MUST run the entire evaluation dataset through all
+three layers: schema validation, invariant and property checks, and semantic
+quality scoring. It MUST produce one PASS or FAIL against a threshold declared in
+the feature specification before the final evaluation begins. Evaluation cases,
+expected results, the threshold, guardrails, and harness evaluators MUST NOT be
+removed, edited, lowered, or disabled by the coding agent. Changes are permitted
+only through a documented specification change made using the Spec Kit artifacts,
+with change history retained.
+
+For each set of evaluation failures, automated repair MUST be limited to at most
+two attempts. The first generated implementation MUST be preserved with the
+`1B-initial-generation` tag before any repair. A human MUST record evaluation and
+repair results in `evidence/harness-log.md`.
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
+This constitution governs implementation and evaluation practices for the
+Natural-Language Reminder Agent. Amendments MUST be made through the Spec Kit
+artifacts, with the change history retained. An amendment MUST state its rationale
+and identify any affected specifications, evaluation cases, expected results,
+thresholds, or guardrails.
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+Version numbers MUST follow semantic versioning: MAJOR for backward-incompatible
+governance or principle changes, MINOR for added principles or materially expanded
+guidance, and PATCH for clarifications and non-semantic refinements. Compliance
+MUST be reviewed when specifications or implementation change and before final
+evaluation; the named quality and evaluation gates above are mandatory.
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+**Version**: 1.0.0 | **Ratified**: 2026-11-11 | **Last Amended**: 2026-11-11
