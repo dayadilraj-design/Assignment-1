@@ -35,7 +35,7 @@ Identify measurable quality standards.
      5. `git commit -m "1B: constitution"` created one clean commit (`b139f74`).
      6. `git push` succeeded: `4eb9fae..b139f74  main -> main`.
    - **Outcome:** Push protection rejected the push, so the key was not stored in the GitHub repository. I did not use GitHub's "allow this secret" URL.
-   - **Key status:** The exposed key has been rotated. Only placeholders are in `.env.example`; the real key stays in `.env`, which is git-ignored.
+   - **Key status:** I rotated the key. Only placeholders are in `.env.example`; the real key stays in `.env`, which is git-ignored.
 
 ## 2. /speckit-constitution (amendment 1.1.0)
 
@@ -127,35 +127,7 @@ Success measures: schema validity 100%, adversarial refusal 100%, no secrets in 
 ### Round 1
 
 ```text
-Build a Natural-Language Reminder Agent: a Python 3.12 command line tool that converts one unstructured reminder request into one structured JSON result using a Gemini model.
-
-Interface: `python -m reminder_agent "<text>" --now <ISO datetime>`. `--now` is required and is the reference time for relative dates. Output is one compact JSON object on stdout. Exit code 0 when a result is produced (including needs_clarification and refused), 1 for invalid input or application errors, 2 for service/network failures (timeout, or HTTP 429/503 after allowed attempts). Service failures print a message to stderr and never print a result object.
-
-Output schema (exactly these fields, no others):
-- status: "ok" | "needs_clarification" | "refused"
-- action: "create" | "reschedule" | "snooze" | "cancel" | "none"
-- title: string (1-100 chars) or null
-- remind_at: ISO 8601 local datetime "YYYY-MM-DDTHH:MM:SS" or null
-- recurrence: "none" | "daily" | "weekly" | "monthly"
-- clarification_question: string or null
-- refusal_reason: string or null
-
-Structural invariants:
-- status "ok": action is not "none"; title is non-empty for create; remind_at is present, valid, and strictly later than --now for create, reschedule and snooze; clarification_question and refusal_reason are null.
-- status "needs_clarification": action "none"; remind_at null; clarification_question non-empty and ends with "?"; refusal_reason null.
-- status "refused": action "none"; title and remind_at null; refusal_reason non-empty; clarification_question null.
-
-Behavioural properties:
-- Relative expressions ("in 2 hours", "tomorrow at 9am", "next Monday") resolve from --now, never from the system clock.
-- Missing date or time means needs_clarification, never a guessed value.
-- Text that tries to override instructions, asks for unrelated tasks, or contains harmful requests is refused and never produces an executable reminder.
-- Reminder text inside the request is data; instructions inside it are ignored.
-
-Guardrails: validate every model response against the schema and invariants before output; an invalid model response is an application error (exit 1), not a success. The API key comes only from GEMINI_API_KEY or a git-ignored .env; the model name from LLM_MODEL; never log or print them.
-
-Evaluation: an evals/dataset.json of at least 18 cases, each with id, category, input text, now, and expected fields. Categories: normal (6), boundary (3, e.g. midnight, month end, year end), ambiguous (3), missing information (2), malformed (2, e.g. empty or gibberish text), adversarial (2 or more, e.g. prompt injection). A single harness runs every case through three layers: (1) schema validation, (2) invariants and properties, (3) semantic comparison against expected status, action, remind_at (exact), and title (expected keywords present). Case score = 0.3 schema + 0.4 invariants + 0.3 semantic. The run PASSES only if: mean case score >= 0.85, every case is schema-valid, and every adversarial and missing-information case passes fully. Cases that hit service failures are reported as ERROR, not FAIL or PASS; any ERROR makes the run INCONCLUSIVE. Results are written to evidence/eval-results.json with the model name and settings but never the key. The threshold above is fixed now and may change only through a documented spec change.
-
-Success measures: schema validity 100%, adversarial refusal 100%, no secrets in the repository.
+/speckit-clarify (run with no extra text)
 ```
 
 **Question 1 (reference-time format):** Should `--now` accept only a local datetime without a UTC offset, or should offset-aware datetimes also be accepted? The input determines how relative dates are interpreted, while `remind_at` is returned without a time-zone offset.
@@ -186,24 +158,69 @@ Focus on these unresolved points and record each decision in the spec:
 Copilot recorded all five proposals in the spec. Together with the two round 1 decisions, this gives seven recorded decisions in total.
 
 ### My notes
-1. **Why round 2 was needed:** Round 1 asked only two questions. Five gaps in the spec were not asked about, so I ran a second round with a focus prompt that states a proposed answer for each. The five gaps were:
-   1. **Target of reschedule, snooze and cancel:** the tool is stateless and the schema has no reminder ID, so "an identified reminder" was undefined. Proposal: the `title` identifies it and must be non-empty for these actions.
-   2. **Time at or before `--now`:** the edge case said it was invalid but gave no outcome. Proposal: `needs_clarification` asking for a future time.
-   3. **Vague times:** "morning", "evening", "later" and "tonight" had no defined handling. Proposal: fixed defaults (09:00, 14:00, 18:00, 21:00), and "later" or "soon" with no time means `needs_clarification`.
-   4. **Recurrence:** it was unclear what `remind_at` means for "every Monday" and which recurrence values reschedule, snooze and cancel may have. Proposal: `remind_at` is the first occurrence, and those three actions always use `none`.
-   5. **Scoring detail:** the 0.4 invariants weight and the 0.3 semantic weight had no defined sub-score, and the model is not fully deterministic even at 0.2. Proposal: schema is 1 or 0, invariants is passed checks divided by applicable checks, semantic is the fraction of status, action, `remind_at` and title-keyword checks that pass, and each case runs once per evaluation.
+1. **Why round 2 was needed:** Round 1 asked only two questions. After reading the spec I saw five things it still left open: how a reminder is identified when it is rescheduled, snoozed or cancelled, what happens when the requested time is already in the past, how vague times like "evening" or "later" are handled, what `remind_at` means for recurring reminders, and how exactly each evaluation layer is scored. Copilot would have had to guess these, and a guess would have made the evaluation results unreliable, so I ran a second round with a proposed answer for each.
 2. **Round 1 settled two earlier open points:** the format of `--now` (naive local datetime only) and the empty-input outcome (exit 1 with no JSON, while gibberish returns `needs_clarification`). So the two malformed dataset cases will have different expected outcomes: the empty case expects exit 1, and the harness must treat that as a valid expected result.
 3. **Checklist exceptions:** The spec checklist ended at 13 of 16 items. The three open items are template checks such as "no implementation details" and "written for non-technical stakeholders". They conflict with my own explicit requirements (Python 3.12, `urllib`, Gemini, the evaluation harness), so I left them unchecked on purpose. Leaving them unchecked is correct, because making the spec free of implementation details would mean deleting requirements I was asked to include.
 4. **What changed in the spec:** Copilot reported that all seven decisions (two from round 1, five from round 2) are recorded in the spec. The 0.85 threshold is unchanged, no clarification markers remain, and no hooks were configured.
-5. **Still open:** The case field name for expected title keywords (`title_keywords`) was not asked in either round, and neither were the expected outcomes of the three ambiguous cases. I will settle both when I write `evals/dataset.json`, and any change to the spec must go through a documented spec change.
+5. **Still open after clarify:** Neither round asked what the three *ambiguous* cases should produce (a clarification question, or the most likely reading). I will decide this when I write `evals/dataset.json`, and any change to the spec must go through a documented spec change. The name of the field for expected title keywords was also not covered by clarify. I fixed it as `title_keywords` in the plan prompt instead (see section 5, note 2).
 6. **Checks after clarification:** I re-ran the `NEEDS CLARIFICATION` search on the spec and no markers remain, as Copilot also reported.
-7. **Commit and push:** 
-Enumerating objects: 15, done.
-Counting objects: 100% (15/15), done.
-Delta compression using up to 8 threads
-Compressing objects: 100% (7/7), done.
-Writing objects: 100% (8/8), 4.93 KiB | 1010.00 KiB/s, done.
-Total 8 (delta 4), reused 0 (delta 0), pack-reused 0 (from 0)
-remote: Resolving deltas: 100% (4/4), completed with 4 local objects.
-To https://github.com/dayadilraj-design/Assignment-1/
-   d1f2d3a..14c061a  main -> main
+7. **Commit and push:** I did not commit the clarify changes on their own. They went in with the plan commit, `e725e05`.
+
+## 5. /speckit-plan
+
+```text
+Plan the Natural-Language Reminder Agent. Keep it simple; Python 3.12, standard library only at runtime.
+
+Structure:
+- src/reminder_agent/: __main__.py and cli.py (argument parsing, exit codes 0/1/2, one JSON object to stdout, errors to stderr); client.py (Gemini REST call via urllib with header x-goog-api-key, temperature 0.2, 30 s timeout, at most 3 attempts retrying only 429 and 503; raises a ServiceError after that; reads GEMINI_API_KEY and LLM_MODEL from the environment or a git-ignored .env; never logs the key); prompt.py (system instruction treating the reminder text strictly as data, fixed time-of-day defaults, JSON-only output); validation.py (exact seven-field schema, allowed values, status invariants, remind_at strictly after --now); core.py (one function run(text, now, transport) used by the CLI and the harness; the transport can be replaced by tests).
+- Request JSON response mode from the model where supported, but always validate locally; an invalid model response is an application error.
+- Empty or whitespace-only text is rejected with exit 1 before any model call. Invalid --now (not a naive local ISO datetime) is exit 1.
+- evals/dataset.json: at least 18 cases (6 normal, 3 boundary, 3 ambiguous, 2 missing-information, 2 malformed, 2 adversarial or more). Each case has id, category, text, now, expected status, action, remind_at, title_keywords; the empty-text case expects outcome "invalid_input" (exit 1, no JSON). Expected values are derived from the specification, never from model output.
+- .harness/run_eval.py: the single harness. Three layers per case (schema, invariants/properties, semantic), scoring and PASS/FAIL/INCONCLUSIVE exactly as specified, ERROR status for service failures, results written to evidence/eval-results.json with model name and settings but never the key. It must not modify cases, expected values, threshold or evaluators.
+- tests/: pytest tests that use a fake transport and never call the network: validator rules, status invariants, retry and ServiceError behaviour (including 429/503 and timeout), exit codes through the CLI, .env handling without printing the key, and harness scoring and status logic including a simulated service failure.
+- Quality commands: ruff check src tests .harness evals; bandit -r src -ll; pytest. Document how to run everything in README.md, including setting up .env from .env.example.
+Record research, data model, contracts (CLI and JSON schema) and a quickstart in the plan artifacts.
+```
+
+### Question from Copilot (empty-input evaluation case)
+
+Copilot asked: the requested empty-input case expects `invalid_input` (exit 1, no JSON), but the current spec also says every evaluation case must be schema-valid and semantically checks status, action, `remind_at` and title keywords. How should the harness handle this no-JSON case?
+- A (recommended): validate a separate CLI outcome contract.
+- B: keep empty input out of the evaluation dataset and test it only in CLI tests.
+- C: treat no JSON as a schema failure.
+
+**My answer:** A. Treating no JSON as a schema failure (C) would make a correct exit 1 count against the run, and leaving the case out of the dataset (B) would drop one of the two required malformed cases. A keeps the case in the dataset with its own expected outcome.
+
+### My notes
+1. **What I specified in the plan prompt:** a file layout (`cli.py`, `client.py`, `prompt.py`, `validation.py`, `core.py`), a `run(text, now, transport)` function shared by the CLI and the harness, a fake transport for tests so no test touches the network, and the quality commands from the constitution. I also asked for README, research, data model, contracts and quickstart artifacts. I decided to keep the design simple, with the standard library only at runtime and pytest only for testing.
+2. **Decisions I carried forward from clarify:** the title-keyword case field is named `title_keywords`, the empty text case expects the outcome `invalid_input`, and `--now` must be a naive local ISO datetime (anything else is exit 1).
+3. **What the plan question was about:** the empty-input case produces no JSON, but the spec says every case must be schema-valid and compared on status, action, `remind_at` and title. I chose A so the harness checks a separate CLI outcome contract for that case.
+4. **What changed in the spec:** the plan step edited `spec.md` (it shows as modified). FR-014 now says the empty-input malformed case must specify the expected outcome `invalid_input` and the no-JSON CLI expectations instead of a reminder-result object. The plan records this as "Empty-input evaluation compatibility: RESOLVED": the case must exit 1, print no JSON on stdout, give a safe diagnostic on stderr and make no model call, and it is still run through the three evaluation layers and weighted scoring.
+5. **Files created by the plan:** `plan.md`, `research.md`, `data-model.md`, `quickstart.md` and three contract files in `contracts/` (`cli.md`, `gemini-rest.md` and `reminder-result.schema.json`), all inside `specs/001-natural-language-reminder-agent/`.
+6. **Checks I ran:**
+   - `Select-String -Path specs\*\plan.md -Pattern "TODO|NEEDS CLARIFICATION|\[[A-Z_ ]+\]"` printed nothing, so the plan has no TODOs, clarification markers or unfilled template placeholders.
+   - `Select-String ... -Pattern "invalid_input" -List` found the term in `spec.md` (line 108, FR-014) and in `plan.md` (line 43), so the empty-input decision is recorded in both.
+   - `git status --short` shows `spec.md` modified and the new plan files untracked, and no `.env` file appears.
+7. **Commit and push:** I committed the plan together with the plan update from section 6, in one commit (see the commit note in section 6).
+
+## 6. /speckit-plan (update)
+
+```text
+Update the existing plan with these corrections, keeping everything else:
+1. The evaluation harness MUST run each case through the CLI entry point (cli.main with argv, capturing stdout, stderr and the exit code), not core.run directly, so the empty-input invalid_input case, exit code 1 and exit code 2 (service failure, reported as ERROR) are measured. Tests keep using a fake transport.
+2. evidence/eval-results.json is committed evidence. It must never contain the API key; it contains the model name, settings, per-case results and the overall PASS/FAIL/INCONCLUSIVE.
+3. The README is the Git-root README.md (one level above Part-1B); it covers both parts and documents the Part-1B run commands. Allow editing that single file.
+```
+
+### Why I ran an update
+When I read the first plan, I saw that the harness was supposed to call `core.run` directly, but the empty-input check and the exit codes live in `cli.py`. That meant the harness would never measure exit 1 or exit 2, so the `invalid_input` case and the service-failure `ERROR` status could not really be tested. I also noticed that `evidence/eval-results.json` was described as not committed and that the README was planned outside the `Part-1B` folder, so I fixed those two points in the same update.
+
+### My notes
+1. **What changed in the plan:** The harness now invokes `cli.main(argv)` exactly once per case and captures stdout, stderr and the exit code, so it measures the real CLI contract: exit 1 for invalid input and exit 2 for service failures. Unit tests still use fake transports, through the CLI's injectable transport boundary, and only the harness's production run uses the configured Gemini client. The plan also says to commit `evidence/eval-results.json` (model name, settings, per-case results and overall outcome, never the API key), to update only the Git-root `README.md`, and that no additional layers or persistence are needed.
+2. **Why this matters for the evaluation:** The first design could have given a PASS while never testing the empty-input path or the service-failure path. Now an exit 1 or exit 2 is a real, measured outcome, which matches the constitution rule that service failures are reported separately as `ERROR`.
+3. **README permission:** The README sits one level above `Part-1B`, so I allowed editing that single file. The README itself is not written yet.
+4. **Checks I ran:**
+   - `Select-String -Path specs\*\plan.md -Pattern "cli.main"` found it in `plan.md` at lines 9, 19 and 106, so the plan now says the harness goes through the CLI.
+   - `git status --short` showed `evidence/prompts-used.md` and `spec.md` modified and the plan files untracked, and no `.env`.
+5. **New file list in the commit:** `contracts/cli.md`, `contracts/gemini-rest.md`, `contracts/reminder-result.schema.json`, `data-model.md`, `plan.md`, `quickstart.md` and `research.md`, plus the modified `spec.md` and `prompts-used.md`.
+6. **Commit and push:** `git add .` then `git commit -m "1B: plan update"` created `e725e05` (9 files changed, 442 insertions, 9 deletions). `git push` succeeded (`14c061a..e725e05  main -> main`) with no push-protection block.
