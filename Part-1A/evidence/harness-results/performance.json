@@ -1,0 +1,26 @@
+{
+  "recorded_at": "2026-11-11T14:39:31",
+  "python": "3.12.16",
+  "os": "Windows-11-10.0.22621-SP0",
+  "cpu": "Intel64 Family 6 Model 142 Stepping 10, GenuineIntel",
+  "memory_gb": 7.9,
+  "task_count": 10000,
+  "runs": 5,
+  "limit_seconds": 2.0,
+  "unfiltered_seconds": [
+    0.283,
+    0.274,
+    0.287,
+    0.288,
+    0.269
+  ],
+  "filtered_seconds": [
+    0.259,
+    0.258,
+    0.25,
+    0.256,
+    0.256
+  ],
+  "unfiltered_median": 0.283,
+  "filtered_median": 0.256
+}

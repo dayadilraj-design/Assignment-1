@@ -1,0 +1,5 @@
+﻿Integrity check at 2026-11-11T15:38:13
+--- git diff against 1A-harness-baseline for tests and .harness (empty means unchanged):
+--- tags:
+1A-harness-baseline
+1A-initial-generation

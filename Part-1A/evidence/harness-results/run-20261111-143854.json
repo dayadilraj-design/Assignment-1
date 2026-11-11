@@ -1,0 +1,35 @@
+{
+  "timestamp": "20261111-143854",
+  "python": "3.12.16",
+  "platform": "Windows-11-10.0.22621-SP0",
+  "overall": "PASS",
+  "gates": [
+    {
+      "gate": "lint",
+      "command": "-m ruff check src tests",
+      "exit_code": 0,
+      "status": "PASS",
+      "duration_seconds": 0.39,
+      "stdout": "All checks passed!\n",
+      "stderr": ""
+    },
+    {
+      "gate": "security",
+      "command": "-m bandit -r src -ll -q",
+      "exit_code": 0,
+      "status": "PASS",
+      "duration_seconds": 1.53,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "gate": "tests",
+      "command": "-m pytest tests -q",
+      "exit_code": 0,
+      "status": "PASS",
+      "duration_seconds": 35.39,
+      "stdout": "........................................................................ [ 69%]\n................................                                         [100%]\n104 passed in 33.19s\n",
+      "stderr": ""
+    }
+  ]
+}
