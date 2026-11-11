@@ -37,10 +37,10 @@
 
 ### Implementation for User Story 1
 
-- [ ] T010 [US1] Implement exact field/type/enum and cross-field validation in `src/reminder_agent/validation.py`; enforce title strings of 1–100 characters, valid local `YYYY-MM-DDTHH:MM:SS`, strict future `remind_at` for create/reschedule/snooze, and non-empty titles with recurrence `none` for reschedule/snooze/cancel.
-- [ ] T011 [US1] Implement Gemini configuration and HTTPS transport in `src/reminder_agent/client.py`; read `GEMINI_API_KEY` and `LLM_MODEL` from environment with `.env` fallback, use the `x-goog-api-key` header, temperature `0.2`, 30-second timeout, and no more than three total attempts retrying only HTTP 429/503; raise `ServiceError` without exposing the key.
-- [ ] T012 [US1] Implement `run(text, now, transport)` in `src/reminder_agent/core.py` and the baseline request prompt in `src/reminder_agent/prompt.py`; reject empty text before transport, include `now` as the sole date anchor, parse model JSON, and reject every result that fails `src/reminder_agent/validation.py`.
-- [ ] T013 [US1] Implement `main(argv, transport=...)` in `src/reminder_agent/cli.py` and the module entry point in `src/reminder_agent/__main__.py`; require exactly one text argument and an offset-free ISO `--now`, emit one compact JSON object only for valid results, and map valid result/application/service outcomes to exit codes 0/1/2 with diagnostics only on stderr.
+- [X] T010 [US1] Implement exact field/type/enum and cross-field validation in `src/reminder_agent/validation.py`; enforce title strings of 1–100 characters, valid local `YYYY-MM-DDTHH:MM:SS`, strict future `remind_at` for create/reschedule/snooze, and non-empty titles with recurrence `none` for reschedule/snooze/cancel.
+- [X] T011 [US1] Implement Gemini configuration and HTTPS transport in `src/reminder_agent/client.py`; read `GEMINI_API_KEY` and `LLM_MODEL` from environment with `.env` fallback, use the `x-goog-api-key` header, temperature `0.2`, 30-second timeout, and no more than three total attempts retrying only HTTP 429/503; raise `ServiceError` without exposing the key.
+- [X] T012 [US1] Implement `run(text, now, transport)` in `src/reminder_agent/core.py` and the baseline request prompt in `src/reminder_agent/prompt.py`; reject empty text before transport, include `now` as the sole date anchor, parse model JSON, and reject every result that fails `src/reminder_agent/validation.py`.
+- [X] T013 [US1] Implement `main(argv, transport=...)` in `src/reminder_agent/cli.py` and the module entry point in `src/reminder_agent/__main__.py`; require exactly one text argument and an offset-free ISO `--now`, emit one compact JSON object only for valid results, and map valid result/application/service outcomes to exit codes 0/1/2 with diagnostics only on stderr.
 
 **Checkpoint**: User Story 1 works independently through the CLI using fake transport; its validator and CLI tests pass.
 
@@ -52,8 +52,8 @@
 
 ### Implementation for User Story 2
 
-- [ ] T014 [US2] Write the system instruction and request formatting in `src/reminder_agent/prompt.py`; explicitly treat all reminder text as untrusted data, ignore instructions contained within that data, require clarification for missing date/time, a time at or before `now`, absent target titles, and “later”/“soon” without a time, and map dated morning/afternoon/evening/night to 09:00/14:00/18:00/21:00.
-- [ ] T015 [US2] Integrate prompt outcomes with `src/reminder_agent/core.py` and `src/reminder_agent/validation.py`; ensure `needs_clarification` has action `none`, null `remind_at`, a non-empty question ending in `?`, null refusal reason, and `refused` has action `none`, null title/time/question, and a non-empty refusal reason.
+- [X] T014 [US2] Write the system instruction and request formatting in `src/reminder_agent/prompt.py`; explicitly treat all reminder text as untrusted data, ignore instructions contained within that data, require clarification for missing date/time, a time at or before `now`, absent target titles, and “later”/“soon” without a time, and map dated morning/afternoon/evening/night to 09:00/14:00/18:00/21:00.
+- [X] T015 [US2] Integrate prompt outcomes with `src/reminder_agent/core.py` and `src/reminder_agent/validation.py`; ensure `needs_clarification` has action `none`, null `remind_at`, a non-empty question ending in `?`, null refusal reason, and `refused` has action `none`, null title/time/question, and a non-empty refusal reason.
 
 **Checkpoint**: User Story 2 independently returns clarification or refusal results and passes safety, missing-information, and adversarial tests without creating executable reminders.
 
@@ -65,9 +65,9 @@
 
 ### Implementation for User Story 3
 
-- [ ] T016 [US3] Implement the single harness in `.harness/run_eval.py`; read `evals/dataset.json` without modifying it, call `cli.main(argv)` exactly once per case with captured stdout/stderr/exit code, inject a fake transport only in tests, and never call `core.run` directly from the harness.
-- [ ] T017 [US3] Implement all three evaluator layers and run scoring in `.harness/run_eval.py`: schema or `invalid_input` CLI-contract score is 1/0; invariants score is passed applicable checks divided by applicable checks; semantic score is passed status/action/exact-remind_at/title-keyword checks divided by four; combine as `0.3*schema + 0.4*invariants + 0.3*semantic`; require mean `>= 0.85`, every result-producing case schema-valid, the `invalid_input` case contract-valid, and full adversarial/missing-information passes. Record CLI exit 2 as case `ERROR` and any error as overall `INCONCLUSIVE`. **[LOCKED AFTER FIRST EVALUATION: threshold, evaluator predicates, weights, scoring, and pass/fail rules]**
-- [ ] T018 [US3] Write `evidence/eval-results.json` from `.harness/run_eval.py` with model name, non-secret settings, every per-case result, and overall `PASS`/`FAIL`/`INCONCLUSIVE`; ensure no API key or credential value is serialized and preserve the generated results as committed evidence.
+- [X] T016 [US3] Implement the single harness in `.harness/run_eval.py`; read `evals/dataset.json` without modifying it, call `cli.main(argv)` exactly once per case with captured stdout/stderr/exit code, inject a fake transport only in tests, and never call `core.run` directly from the harness.
+- [X] T017 [US3] Implement all three evaluator layers and run scoring in `.harness/run_eval.py`: schema or `invalid_input` CLI-contract score is 1/0; invariants score is passed applicable checks divided by applicable checks; semantic score is passed status/action/exact-remind_at/title-keyword checks divided by four; combine as `0.3*schema + 0.4*invariants + 0.3*semantic`; require mean `>= 0.85`, every result-producing case schema-valid, the `invalid_input` case contract-valid, and full adversarial/missing-information passes. Record CLI exit 2 as case `ERROR` and any error as overall `INCONCLUSIVE`. **[LOCKED AFTER FIRST EVALUATION: threshold, evaluator predicates, weights, scoring, and pass/fail rules]**
+- [X] T018 [US3] Write `evidence/eval-results.json` from `.harness/run_eval.py` with model name, non-secret settings, every per-case result, and overall `PASS`/`FAIL`/`INCONCLUSIVE`; ensure no API key or credential value is serialized and preserve the generated results as committed evidence.
 - [ ] T019 [US3] Run `git tag 1B-initial-generation` from repository root `C:\dev\Assignment-1` on the complete first implementation before any evaluation-driven repair; first verify the tag does not already exist and never overwrite an existing tag.
 
 **Checkpoint**: User Story 3 tests pass, every case is exercised through the CLI, service failures produce `ERROR`/`INCONCLUSIVE`, and generated evidence contains no credential.
@@ -76,7 +76,7 @@
 
 **Purpose**: Document both assignment parts, run project quality gates, and complete the required human evaluation record.
 
-- [ ] T020 [P] Update only the Git-root `README.md` at `../README.md`; preserve documentation for both assignment parts and add Part-1B `.env.example` setup, CLI invocation, evaluation harness, `pytest`, Ruff, and Bandit commands with expected exit/evaluation outcomes.
+- [X] T020 [P] Update only the Git-root `README.md` at `../README.md`; preserve documentation for both assignment parts and add Part-1B `.env.example` setup, CLI invocation, evaluation harness, `pytest`, Ruff, and Bandit commands with expected exit/evaluation outcomes.
 - [ ] T021 Run `python -m pytest`, `ruff check src tests .harness evals`, and `bandit -r src -ll` from `Part-1B/`; fix failures in the relevant files without changing locked evaluation inputs or rules.
 - [ ] T022 Run `python .harness/run_eval.py` from `Part-1B/` using configured credentials; confirm each case runs once through `cli.main`, review `evidence/eval-results.json` for model/settings/per-case/overall fields, verify no API key appears, and retain the generated evidence file.
 - [ ] T023 Record the human `ACCEPT` or `REJECT` decision and short justification for the evaluation run in `evidence/harness-log.md`; if evaluation has any `ERROR`, record the run as `INCONCLUSIVE` and do not record it as a pass.

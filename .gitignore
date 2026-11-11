@@ -5,3 +5,6 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 live-output/
+venv/
+dist/
+*.egg-info/
