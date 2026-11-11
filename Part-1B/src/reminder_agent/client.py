@@ -133,7 +133,7 @@ class GeminiClient:
         for attempt in range(self.max_attempts):
             try:
                 # Preserve compatibility with tests replacing urlopen with a fake.
-                patched_urlopen = getattr(urllib.request, "urlopen")
+                patched_urlopen = urllib.request.urlopen
                 if patched_urlopen is not _ORIGINAL_URLOPEN:
                     response_context = patched_urlopen(request, timeout=self.timeout)
                 else:

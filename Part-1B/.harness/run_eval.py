@@ -68,8 +68,7 @@ def _load_runtime() -> dict[str, Any]:
     if str(SOURCE_ROOT) not in sys.path:
         sys.path.insert(0, str(SOURCE_ROOT))
 
-    from reminder_agent import cli
-    from reminder_agent import validation
+    from reminder_agent import cli, validation
     from reminder_agent.client import default_transport
 
     return {
