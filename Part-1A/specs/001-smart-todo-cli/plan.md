@@ -44,11 +44,11 @@ Build a single-user todo CLI with add, list, edit, status, and delete commands. 
 
 ## Design Decisions
 
-- Follow the user-specified CLI exactly. `--tag` is repeatable; for edit it replaces all tags, while `--clear-tags` empties them. Treat simultaneous `--tag` and `--clear-tags` as invalid. Use argparse choices for enumerated values and normalize parser validation failures to exit code 1 (help remains 0).
+- Follow the user-specified CLI exactly. `list` accepts one optional `--tag`; `--tag` is repeatable for `add` and `edit`. For edit, repeated `--tag` values replace all tags, while `--clear-tags` empties them. Treat simultaneous `--tag` and `--clear-tags` as invalid. Use argparse choices for enumerated values and normalize parser validation failures to exit code 1 (help remains 0).
 - Store `{"version":1,"next_id":N,"tasks":[...]}`. `next_id` is persisted so IDs remain positive, increasing, and never reused after deletion. Reject malformed or unsupported documents before any write.
 - Validate and form a complete prospective change before saving. Save to a temporary file in the same directory and atomically replace the original only after serialization succeeds, preserving the previous file on failed operations and avoiding partially written JSON.
 - Keep field validation and stable serialization in the model, allowed transitions and ordered/filterable list behavior in the service, disk/JSON responsibilities in storage, and parsing/printing/exit mapping in the CLI.
-- Make an edit with no edit options a valid no-op that returns the unchanged complete task. This keeps the optional edit flags useful without inventing a required-field constraint absent from the spec.
+- Reject an edit with no edit options as a validation error, just like an edit that combines `--tag` with `--clear-tags`; both leave task data unchanged and exit 1, as specified by AC-22.
 - The default and override file paths are resolved relative to the process current working directory when relative. Error wording remains concise and diagnostic; exact phrasing is not mandated, but errors go to stderr.
 
 ## Acceptance-Criteria Test Strategy
@@ -61,7 +61,7 @@ Every test runs the public module in a fresh subprocess with a temporary data fi
 | AC-02 | `test_ac02_add_stores_supplied_fields` |
 | AC-03 | `test_ac03_rejects_invalid_title_priority_and_tags_atomically` (blank/missing title, invalid priority, blank/duplicate tags on add/edit, malformed/non-positive ID) |
 | AC-04 | `test_ac04_list_orders_by_priority_then_numeric_id` |
-| AC-05 | `test_ac05_tag_filter_is_exact_and_keeps_order` (also cover repeated list tags as an any-match filter) |
+| AC-05 | `test_ac05_tag_filter_is_exact_and_keeps_order` |
 | AC-06 | `test_ac06_empty_and_unmatched_lists_succeed` |
 | AC-07 | `test_ac07_edit_changes_only_requested_fields` |
 | AC-08 | `test_ac08_invalid_edit_is_atomic` (parameterize invalid title, priority, and tags) |
@@ -78,6 +78,7 @@ Every test runs the public module in a fresh subprocess with a temporary data fi
 | AC-19 | `test_ac19_explicitly_empty_tag_filter_is_rejected` |
 | AC-20 | `test_ac20_ten_thousand_task_lists_meet_two_second_median` (pre-create 10,000 records; run each list shape five times, time process launch through complete stdout capture, assert each median <= 2 seconds, record OS/CPU/memory and Python version) |
 | AC-21 | `test_ac21_data_file_override_supports_absolute_and_relative_paths` (also verify default `todo.json` is rooted at cwd) |
+| AC-22 | `test_ac22_edit_without_changes_or_conflicting_tag_flags_rejected` |
 
 For AC-17, use malformed bytes/JSON and a path that reliably fails reading on the current platform (for example, a directory at the requested file path); assert stderr, code 1, and that the original file/directory remains unchanged. Do not rely solely on permission bits on Windows. The performance test must run under Python 3.12; the current reference machine is Windows 11 Pro (10.0.22621), Intel Core i7-8550U @ 1.80 GHz, 7.9 GB visible memory.
 

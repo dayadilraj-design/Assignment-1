@@ -12,7 +12,7 @@ One task is a user's unit of work. Task objects use the following field order in
 | `tags` | array of strings | Zero or more trimmed, non-empty, case-sensitive values; duplicates within a task are invalid; defaults to `[]`. Preserve the supplied order. |
 | `status` | string enum | `todo`, `doing`, or `done`; defaults to `todo` on add. |
 
-The CLI must not expose an initial-status option. An edit preserves `id` and `status`, and changes only fields supplied. `--tag` on edit replaces the entire tag array; `--clear-tags` replaces it with an empty array. An edit with no field options is a no-op returning the unchanged task.
+The CLI must not expose an initial-status option. An edit preserves `id` and `status`, and changes only fields supplied. `--tag` on edit replaces the entire tag array; `--clear-tags` replaces it with an empty array. An edit with no edit options or with both `--tag` and `--clear-tags` is a validation error and leaves task data unchanged.
 
 ## Status transitions
 

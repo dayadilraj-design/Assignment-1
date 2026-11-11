@@ -18,6 +18,10 @@
 - Q: How should the 10,000-task, two-second list performance requirement be measured, and which environment should serve as the reference? → A: Use the developer's machine with Python 3.12 and record its OS, CPU, and memory; time the full CLI process through complete stdout capture for unfiltered and tag-filtered lists over pre-created 10,000-task data, using the median of five runs for each.
 - Q: How should tests and users select a temporary task data file instead of the default file? → A: Use `--data-file <path>`; resolve relative paths from the current working directory.
 
+### Revision 2026-11-11
+
+- Q: What should happen when `edit` has no edit options or combines `--tag` with `--clear-tags`, and how many tag filters can `list` accept? → A: Both edit forms are validation errors reported on stderr with exit code `1` and no task data changes. `list` accepts one optional `--tag`; `--tag` remains repeatable for `add` and `edit`.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Manage Tasks (Priority: P1)
@@ -95,6 +99,7 @@ As the single user, I want to filter tasks by tag and see tasks in a predictable
 - **FR-014**: The CLI MUST provide a dedicated `status` command to change a task's status. An unrecognized status value MUST be reported as a validation error; a recognized but disallowed transition MUST be reported as an illegal transition. Either error MUST be reported on stderr, exit `1`, and leave task data unchanged.
 - **FR-015**: An explicitly empty tag filter MUST be rejected as a validation error, reported on stderr, with exit code `1` and no task data changes.
 - **FR-016**: The CLI MUST accept `--data-file <path>` to select the task data file instead of the default; relative paths MUST resolve from the current working directory.
+- **FR-017**: An `edit` request MUST include at least one edit option and MUST NOT combine `--tag` with `--clear-tags`. Either invalid form MUST be reported as a validation error on stderr, exit `1`, and leave task data unchanged.
 
 ### Non-Functional Requirements
 
@@ -126,6 +131,7 @@ As the single user, I want to filter tasks by tag and see tasks in a predictable
 - **AC-19** — **Given** any task collection, **When** the user lists tasks with an explicitly empty tag filter, **Then** the CLI reports a validation error on stderr, changes no task data, and exits `1`.
 - **AC-20** — **Given** a pre-created file containing 10,000 valid tasks and the developer's Python 3.12 machine with its OS, CPU, and memory recorded, **When** the CLI performs an unfiltered list and a tag-filtered list, each measured five times from process launch through complete stdout capture, **Then** the median duration for each operation is at most 2 seconds.
 - **AC-21** — **Given** a path to a temporary task data file, **When** the user invokes the CLI with `--data-file <path>`, **Then** the CLI reads and writes task data at that path instead of the default file; a relative path is resolved from the current working directory.
+- **AC-22** — **Given** an existing task, **When** the user runs `edit` with no edit options or with both `--tag` and `--clear-tags`, **Then** the CLI reports a validation error on stderr, changes no task data, and exits `1`.
 
 ### Key Entities
 
@@ -136,7 +142,7 @@ As the single user, I want to filter tasks by tag and see tasks in a predictable
 
 ### Measurable Outcomes
 
-- **SC-001**: All 21 acceptance criteria pass with their specified task data outcomes, output, and exit codes.
+- **SC-001**: All 22 acceptance criteria pass with their specified task data outcomes, output, and exit codes.
 - **SC-002**: Users can complete an add, list, edit, and delete cycle with each successful command returning exit code `0`.
 - **SC-003**: For a pre-created collection of 10,000 tasks, unfiltered and tag-filtered lists each have a median wall-clock duration of at most 2 seconds across five runs on the developer's Python 3.12 machine; record the machine's OS, CPU, and memory.
 - **SC-004**: Across repeated list requests over unchanged data, 100% of task lists have identical membership and ordering.

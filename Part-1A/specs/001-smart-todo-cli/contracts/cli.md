@@ -6,13 +6,13 @@ Run from the project root with `PYTHONPATH=src`:
 
 ```text
 python -m todo [--data-file PATH] add TITLE [--priority low|medium|high] [--tag TAG ...]
-python -m todo [--data-file PATH] list [--tag TAG ...]
+python -m todo [--data-file PATH] list [--tag TAG]
 python -m todo [--data-file PATH] edit ID [--title TITLE] [--priority P] [--tag TAG ...] [--clear-tags]
 python -m todo [--data-file PATH] status ID STATUS
 python -m todo [--data-file PATH] delete ID
 ```
 
-The default data path is `todo.json` in the current working directory. Relative `--data-file` values resolve against that directory. `--tag` is repeatable. On `list`, repeated tags select tasks matching any supplied tag, with each comparison being exact and case-sensitive. On `edit`, one or more `--tag` values replace the complete tag set; `--clear-tags` empties it. Supplying both edit options is invalid. With no edit options, `edit ID` is a no-op and returns the task. The option `--tag ""` is an explicitly empty filter and is invalid.
+The default data path is `todo.json` in the current working directory. Relative `--data-file` values resolve against that directory. `list` accepts one optional `--tag` and matches it exactly and case-sensitively. `--tag` is repeatable for `add` and `edit`. On `edit`, one or more `--tag` values replace the complete tag set; `--clear-tags` empties it. Supplying both edit options, or supplying neither, is invalid. The option `--tag ""` is an explicitly empty filter and is invalid.
 
 ## Standard output
 
@@ -22,7 +22,7 @@ Every successful command prints exactly one compact JSON value followed by exact
 |---|---|
 | `add` | Complete created task object. |
 | `list` | Array of complete task objects, including `[]` for no results. |
-| `edit` | Complete updated task object (or unchanged object for a no-op edit). |
+| `edit` | Complete updated task object. |
 | `status` | Complete updated task object. |
 | `delete` | `{"deleted":<id>}` with the deleted numeric ID. |
 

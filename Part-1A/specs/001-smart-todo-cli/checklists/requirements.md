@@ -31,5 +31,5 @@
 
 ## Notes
 
-- Validation passed: the spec defines scope, assumptions, error outcomes, all primary user flows, and 15 binary Given/When/Then acceptance criteria.
+- Validation passed: the spec defines scope, assumptions, error outcomes, all primary user flows, and 22 binary Given/When/Then acceptance criteria.
 - Items marked incomplete require spec updates before `/speckit-clarify` or `/speckit-plan`

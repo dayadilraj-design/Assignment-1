@@ -22,7 +22,7 @@ All technology and interface choices needed for design were supplied by the user
 
 ## CLI and observable behavior
 
-- **Decision**: Implement the supplied command grammar exactly, with repeatable `--tag`, edit tag replacement, and `--clear-tags`; emit one compact JSON value plus one newline for each successful command.
+- **Decision**: Implement the supplied command grammar exactly, with one optional list `--tag`, repeatable add/edit `--tag`, edit tag replacement, and `--clear-tags`; reject edits with no edit option or with both tag-setting options. Emit one compact JSON value plus one newline for each successful command.
 - **Rationale**: This resolves the spec's planning choice about command spelling and filename and preserves its exact stdout contract.
 - **Alternatives considered**: Human-readable or pretty-printed output was rejected because it violates the defined compact JSON contract.
 
