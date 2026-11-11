@@ -1,6 +1,6 @@
 <!--
 Sync Impact Report
-Version change: 1.0.0 -> 1.1.0 (minor: materially expanded and specialized the project principles)
+   Version change: 1.1.0 -> 1.2.0 (minor: added first-generation preservation and suppression-comment rules)
 Modified principles:
   I. Requirements and Correctness -> I. Python Runtime and Dependencies
   II. Focused and Simple Changes -> II. Deterministic CLI Behavior
@@ -63,6 +63,11 @@ failures for human review. Acceptance requires successful completion of pytest,
 `ruff check src tests`, and `bandit -r src` with no medium- or high-severity findings. Each
 applicable `AC-xx` MUST have a test that references its ID and uses exact assertions.
 
+The first generated implementation MUST be committed, tagged `1A-initial-generation`, and copied to
+`evidence/initial-generation/` before any harness-driven correction. Harness result files MUST NOT be
+edited manually. `# noqa` and `# nosec` suppression comments MUST NOT be used unless approved through
+the amendment process.
+
 ## Governance
 
 This constitution defines the project's governance requirements. An amendment MUST include a
@@ -76,4 +81,4 @@ a principle, MINOR for a new principle or materially expanded guidance, and PATC
 clarifications or non-semantic refinements. Reviews MUST verify compliance with this constitution
 and require an explicitly documented, approved exception for any deviation.
 
-**Version**: 1.1.0 | **Ratified**: TODO(RATIFICATION_DATE): original adoption date unknown; record upon approval | **Last Amended**: 2026-11-11
+**Version**: 1.2.0 | **Ratified**: 2026-11-11 | **Last Amended**: 2026-11-11
