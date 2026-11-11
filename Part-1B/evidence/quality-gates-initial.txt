@@ -1,0 +1,297 @@
+﻿F401 [*] `datetime.datetime` imported but unused
+  --> .harness\run_eval.py:8:22
+   |
+ 6 | import sys
+ 7 | from collections.abc import Callable, Mapping, Sequence
+ 8 | from datetime import datetime, timedelta
+   |                      ^^^^^^^^
+ 9 | from pathlib import Path
+10 | from typing import Any
+   |
+help: Remove unused import: `datetime.datetime`
+  |
+7 | from collections.abc import Callable, Mapping, Sequence
+  - from datetime import datetime, timedelta
+8 + from datetime import timedelta
+9 | from pathlib import Path
+  |
+
+E402 Module level import not at top of file
+  --> .harness\run_eval.py:17:1
+   |
+15 |     sys.path.insert(0, str(SOURCE_ROOT))
+16 |
+17 | from reminder_agent import cli
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+18 | from reminder_agent.client import default_transport
+19 | from reminder_agent.validation import (
+   |
+help: Move module level imports to top of file
+
+E402 Module level import not at top of file
+  --> .harness\run_eval.py:18:1
+   |
+17 | from reminder_agent import cli
+18 | from reminder_agent.client import default_transport
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+19 | from reminder_agent.validation import (
+20 |     ACTIONS,
+   |
+help: Move module level imports to top of file
+
+E402 Module level import not at top of file
+  --> .harness\run_eval.py:19:1
+   |
+17 |   from reminder_agent import cli
+18 |   from reminder_agent.client import default_transport
+19 | / from reminder_agent.validation import (
+20 | |     ACTIONS,
+21 | |     RECURRENCES,
+22 | |     STATUSES,
+23 | |     TIMED_ACTIONS,
+24 | |     ValidationError,
+25 | |     parse_local_datetime,
+26 | |     validate_schema,
+27 | | )
+   | |_^
+28 |
+29 |   SCORE_WEIGHTS = {"schema": 0.3, "invariants": 0.4, "semantic": 0.3}
+   |
+help: Move module level imports to top of file
+
+E501 Line too long (90 > 88)
+   --> .harness\run_eval.py:132:89
+    |
+130 |     except (json.JSONDecodeError, ValidationError, TypeError):
+131 |         return 0.0, None
+132 |     if json.dumps(result, separators=(",", ":"), ensure_ascii=False) != serialized_result:
+    |                                                                                         ^^
+133 |         return 0.0, result
+134 |     return 1.0, result
+    |
+
+E501 Line too long (96 > 88)
+   --> .harness\run_eval.py:257:89
+    |
+255 |                     actual_date = None
+256 |             checks.append(
+257 |                 _check("next_weekday_uses_first_later_occurrence", actual_date == expected_date)
+    |                                                                                         ^^^^^^^^
+258 |             )
+    |
+
+E501 Line too long (97 > 88)
+   --> .harness\run_eval.py:264:89
+    |
+262 |             _check(
+263 |                 "adversarial_request_is_non_executable_refusal",
+264 |                 status == "refused" and action == "none" and title is None and remind_at is None,
+    |                                                                                         ^^^^^^^^^
+265 |             )
+266 |         )
+    |
+
+E501 Line too long (91 > 88)
+   --> .harness\run_eval.py:271:89
+    |
+269 |             _check(
+270 |                 "missing_information_requests_clarification",
+271 |                 status == "needs_clarification" and action == "none" and remind_at is None,
+    |                                                                                         ^^^
+272 |             )
+273 |         )
+    |
+
+F401 [*] `datetime.datetime` imported but unused
+ --> src\reminder_agent\cli.py:5:22
+  |
+3 | import sys
+4 | from collections.abc import Sequence
+5 | from datetime import datetime
+  |                      ^^^^^^^^
+6 | from urllib.error import HTTPError
+  |
+help: Remove unused import: `datetime.datetime`
+  |
+4 | from collections.abc import Sequence
+  - from datetime import datetime
+5 | from urllib.error import HTTPError
+  |
+
+UP035 [*] Import from `collections.abc` instead: `Mapping`
+  --> src\reminder_agent\client.py:9:1
+   |
+ 7 | from dataclasses import dataclass, field
+ 8 | from pathlib import Path
+ 9 | from typing import Mapping
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+10 |
+11 | API_KEY_ENV = "GEMINI_API_KEY"
+   |
+help: Import from `collections.abc`
+   |
+8  | from pathlib import Path
+   - from typing import Mapping
+9  + from collections.abc import Mapping
+10 |
+   |
+
+UP041 [*] Replace aliased errors with `TimeoutError`
+   --> src\reminder_agent\client.py:142:20
+    |
+140 |                         "Gemini service returned a retryable error after all attempts."
+141 |                     ) from exc
+142 |             except (TimeoutError, socket.timeout, urllib.error.URLError, OSError) as exc:
+    |                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+143 |                 raise ServiceError("Gemini service request failed.") from exc
+    |
+help: Replace with builtin `TimeoutError`
+    |
+141 |                     ) from exc
+    -             except (TimeoutError, socket.timeout, urllib.error.URLError, OSError) as exc:
+142 +             except (TimeoutError, urllib.error.URLError, OSError) as exc:
+143 |                 raise ServiceError("Gemini service request failed.") from exc
+    |
+
+E501 Line too long (89 > 88)
+   --> src\reminder_agent\client.py:142:89
+    |
+140 |                         "Gemini service returned a retryable error after all attempts."
+141 |                     ) from exc
+142 |             except (TimeoutError, socket.timeout, urllib.error.URLError, OSError) as exc:
+    |                                                                                         ^
+143 |                 raise ServiceError("Gemini service request failed.") from exc
+    |
+
+E501 Line too long (89 > 88)
+  --> src\reminder_agent\validation.py:40:89
+   |
+38 |         parsed = datetime.strptime(value, "%Y-%m-%dT%H:%M:%S")
+39 |     except ValueError as exc:
+40 |         raise ValidationError(f"{field_name} must be a real calendar datetime.") from exc
+   |                                                                                         ^
+41 |     if parsed.strftime("%Y-%m-%dT%H:%M:%S") != value:
+42 |         raise ValidationError(f"{field_name} must use YYYY-MM-DDTHH:MM:SS local format.")
+   |
+
+E501 Line too long (89 > 88)
+  --> src\reminder_agent\validation.py:42:89
+   |
+40 |         raise ValidationError(f"{field_name} must be a real calendar datetime.") from exc
+41 |     if parsed.strftime("%Y-%m-%dT%H:%M:%S") != value:
+42 |         raise ValidationError(f"{field_name} must use YYYY-MM-DDTHH:MM:SS local format.")
+   |                                                                                         ^
+43 |     return parsed
+   |
+
+E501 Line too long (92 > 88)
+  --> src\reminder_agent\validation.py:55:89
+   |
+53 |     if not isinstance(result["action"], str) or result["action"] not in ACTIONS:
+54 |         raise ValidationError("Result action is not allowed.")
+55 |     if not isinstance(result["recurrence"], str) or result["recurrence"] not in RECURRENCES:
+   |                                                                                         ^^^^
+56 |         raise ValidationError("Result recurrence is not allowed.")
+   |
+
+E501 Line too long (92 > 88)
+   --> src\reminder_agent\validation.py:101:89
+    |
+ 99 |             raise ValidationError("A cancel result must have a null remind_at.")
+100 |         if action in TARGET_ACTIONS and recurrence != "none":
+101 |             raise ValidationError("Reschedule, snooze, and cancel recurrence must be none.")
+    |                                                                                         ^^^^
+102 |         if question is not None or refusal_reason is not None:
+103 |             raise ValidationError("An ok result cannot include clarification or refusal text.")
+    |
+
+E501 Line too long (95 > 88)
+   --> src\reminder_agent\validation.py:103:89
+    |
+101 |             raise ValidationError("Reschedule, snooze, and cancel recurrence must be none.")
+102 |         if question is not None or refusal_reason is not None:
+103 |             raise ValidationError("An ok result cannot include clarification or refusal text.")
+    |                                                                                         ^^^^^^^
+104 |         return validated
+    |
+
+E501 Line too long (91 > 88)
+   --> src\reminder_agent\validation.py:115:89
+    |
+113 |             or refusal_reason is not None
+114 |         ):
+115 |             raise ValidationError("The needs_clarification result invariants are not met.")
+    |                                                                                         ^^^
+116 |         return validated
+    |
+
+I001 [*] Import block is un-sorted or un-formatted
+ --> tests\test_cli.py:1:1
+  |
+1 | / import json
+2 | | from datetime import datetime
+3 | |
+4 | | import pytest
+5 | | from reminder_agent.client import ServiceError
+6 | |
+7 | | from reminder_agent import cli
+  | |______________________________^
+8 |
+9 |   NOW = "2026-11-11T09:00:00"
+  |
+help: Organize imports
+  |
+4 | import pytest
+  - from reminder_agent.client import ServiceError
+5 |
+6 | from reminder_agent import cli
+7 + from reminder_agent.client import ServiceError
+8 |
+  |
+
+Found 19 errors.
+[*] 5 fixable with `--fix`.
+bandit : [main]	INFO	profile include tests: None
+At line:1 char:1
++ bandit -r src -ll 2>&1 | Out-File evidence\quality-gates-initial.txt  ...
++ ~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([main]	INFO	profile include tests: None:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+[main]	INFO	profile exclude tests: None
+[main]	INFO	cli include tests: None
+[main]	INFO	cli exclude tests: None
+[main]	INFO	running on Python 3.12.16
+Run started:2026-11-11 15:30:01.303742+00:00
+
+Test results:
+>> Issue: [B310:blacklist] Audit url open for permitted schemes. Allowing use of file:/ or custom schemes is often unexpected.
+   Severity: Medium   Confidence: High
+   CWE: CWE-22 (https://cwe.mitre.org/data/definitions/22.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/blacklists/blacklist_calls.html#b310-urllib-urlopen
+   Location: src\reminder_agent\client.py:132:21
+131	            try:
+132	                with urllib.request.urlopen(request, timeout=self.timeout) as response:
+133	                    response_data = response.read()
+
+--------------------------------------------------
+
+Code scanned:
+	Total lines of code: 385
+	Total lines skipped (#nosec): 0
+	Total potential issues skipped due to specifically being disabled (e.g., #nosec BXXX): 0
+
+Run metrics:
+	Total issues (by severity):
+		Undefined: 0
+		Low: 0
+		Medium: 1
+		High: 0
+	Total issues (by confidence):
+		Undefined: 0
+		Low: 0
+		Medium: 0
+		High: 1
+Files skipped (0):
+......................................................................   [100%]
+70 passed in 0.25s
