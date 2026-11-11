@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "reminder-result.schema.json",
+  "title": "Natural-Language Reminder Agent Result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "status",
+    "action",
+    "title",
+    "remind_at",
+    "recurrence",
+    "clarification_question",
+    "refusal_reason"
+  ],
+  "properties": {
+    "status": {
+      "type": "string",
+      "enum": ["ok", "needs_clarification", "refused"]
+    },
+    "action": {
+      "type": "string",
+      "enum": ["create", "reschedule", "snooze", "cancel", "none"]
+    },
+    "title": {
+      "oneOf": [
+        {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "remind_at": {
+      "oneOf": [
+        {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "recurrence": {
+      "type": "string",
+      "enum": ["none", "daily", "weekly", "monthly"]
+    },
+    "clarification_question": {
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "refusal_reason": {
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+}

@@ -197,4 +197,13 @@ Copilot recorded all five proposals in the spec. Together with the two round 1 d
 4. **What changed in the spec:** Copilot reported that all seven decisions (two from round 1, five from round 2) are recorded in the spec. The 0.85 threshold is unchanged, no clarification markers remain, and no hooks were configured.
 5. **Still open:** The case field name for expected title keywords (`title_keywords`) was not asked in either round, and neither were the expected outcomes of the three ambiguous cases. I will settle both when I write `evals/dataset.json`, and any change to the spec must go through a documented spec change.
 6. **Checks after clarification:** I re-ran the `NEEDS CLARIFICATION` search on the spec and no markers remain, as Copilot also reported.
-7. **Commit and push:** <<PASTE the commit message, hash and `git push` result once you have committed>>.
+7. **Commit and push:** 
+Enumerating objects: 15, done.
+Counting objects: 100% (15/15), done.
+Delta compression using up to 8 threads
+Compressing objects: 100% (7/7), done.
+Writing objects: 100% (8/8), 4.93 KiB | 1010.00 KiB/s, done.
+Total 8 (delta 4), reused 0 (delta 0), pack-reused 0 (from 0)
+remote: Resolving deltas: 100% (4/4), completed with 4 local objects.
+To https://github.com/dayadilraj-design/Assignment-1/
+   d1f2d3a..14c061a  main -> main
