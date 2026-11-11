@@ -224,7 +224,7 @@ When I read the first plan, I saw that the harness was supposed to call `core.ru
    - `Select-String -Path specs\*\plan.md -Pattern "cli.main"` found it in `plan.md` at lines 9, 19 and 106, so the plan now says the harness goes through the CLI.
    - `git status --short` showed `evidence/prompts-used.md` and `spec.md` modified and the plan files untracked, and no `.env`.
 5. **New file list in the commit:** `contracts/cli.md`, `contracts/gemini-rest.md`, `contracts/reminder-result.schema.json`, `data-model.md`, `plan.md`, `quickstart.md` and `research.md`, plus the modified `spec.md` and `prompts-used.md`.
-6. **Commit and push:** `git add .` then `git commit -m "1B: plan update"` created `e725e05` (9 files changed, 442 insertions, 9 deletions). `git push` succeeded (`14c061a..e725e05  main -> main`) with no push-protection block. A later push moved `main` from `e725e05` to `e58e4bc`, so one more commit, `e58e4bc`, was pushed on top of this one after the plan update.
+6. **Commit and push:** `git add .` then `git commit -m "1B: plan update"` created `e725e05` (9 files changed, 442 insertions, 9 deletions). `git push` succeeded (`14c061a..e725e05  main -> main`) with no push-protection block. A later push moved `main` from `e725e05` to `e58e4bc` (`1B: log fixes`), a commit that updated this log and not the plan.
 
 ## 7. /speckit-tasks
 
@@ -281,4 +281,98 @@ Copilot applied only those two changes: the "next <weekday>" rule in the spec's 
    - `Select-String -Path specs\*\spec.md -Pattern "strictly after"` found the rule twice: in the Clarifications entry (line 21) and in FR-002 (line 96).
    - `Select-String -Path specs\*\plan.md -Pattern "test_prompt"` found `test_prompt.py` in the project tree (line 90).
    - `git diff --stat` showed exactly two files changed (`plan.md` with 1 insertion and `spec.md` with 3 changed lines), 3 insertions and 1 deletion in total. The one deletion is the old FR-002 line, which was reworded.
-6. **Commit and push:** <<PASTE the commit message, hash and `git push` result for these two edits. The same terminal also showed a push `483c7d4..617ac4f` before these checks: state what `617ac4f` contained, probably a log-only update>>.
+6. **Commit and push:** I committed the two edits as `6c3f720` (`1B: analyze fixes`, 19:47). The push just before my checks (`483c7d4..617ac4f`) was `617ac4f` (`1B: tasks log`, 19:36), a commit that only updated this log for the tasks step.
+
+## 9. /speckit-implement (in stages)
+
+I did not run plain `/speckit-implement` for all 24 tasks (see section 7, note 7). I ran it in stages, so that I kept control of the live evaluation and the final decision.
+
+### Stage A: tests and dataset first (T001 to T009)
+
+```text
+/speckit-implement Implement ONLY Phase 1 and Phase 2 of tasks.md (T001 to T009), then stop. Do not implement anything from T010 onward, do not write application code beyond the empty package file, do not run any network call, and do not read, print or modify .env.
+
+For T008, create evals/dataset.json with at least these specification-derived cases (expected values must come only from spec.md, never from model behaviour). Use now 2026-11-11T09:00:00 (a Wednesday) unless stated:
+
+- Normal (7): "remind me on 2026-12-01 at 14:30 to renew my passport" (ok, create, 2026-12-01T14:30:00, recurrence none, keywords renew, passport); "remind me in 2 hours to take the medicine" (ok, create, 2026-11-11T11:00:00, keyword medicine); "reschedule my dentist reminder to tomorrow at 10am" (ok, reschedule, 2026-11-12T10:00:00, keyword dentist); "snooze the standup reminder for 30 minutes" (ok, snooze, 2026-11-11T09:30:00, keyword standup); "cancel my gym reminder" (ok, cancel, remind_at null, keyword gy
+[The chat export cut the prompt off at this point.]
+```
+
+The chat export truncates long messages, so the text above is the part that was preserved. The rest of the prompt listed the remaining dataset cases (the other normal cases and the boundary, ambiguous, missing-information, malformed and adversarial cases). Those cases are recorded in full in `evals/dataset.json`, committed in `fe30860`, which is the evidence of what the prompt asked for.
+
+Copilot reported that it completed T001 to T009 only and marked them done in `tasks.md`:
+- **Phase 1:** `pyproject.toml`, the directories, and an empty `src/reminder_agent/__init__.py`, with no other application code.
+- **Phase 2:** six test files under `tests/` and a 19-case `evals/dataset.json` with the requested category counts.
+- **Also changed:** the Git-root `.gitignore`, which gained missing Python build and virtualenv entries.
+- **Checks it ran:** Ruff passed, Bandit reported no issues (the package was empty), and the JSON and syntax checks passed. It did not run pytest, because the application modules did not exist yet. It made no network call and did not access `.env`.
+
+Committed as `fe30860` (`1B: tests and dataset before implementation`, 20:27).
+
+### Stage B: implementation (T010 to T018 and T020)
+
+```text
+/speckit-implement Implement ONLY T010 to T018 and T020 of tasks.md, then stop. Do not do T019 (tag), T021, T022, T023 or T024; I will run the tag, the quality gates and the live evaluation and write the harness log myself. Do not read, print or modify .env. Do not run the live evaluation or any real network call; run pytest only, with fake transports. Do not modify evals/dataset.json or the tests written in Phase 2.
+
+Harness details (these are evaluator rules, set before the first evaluation): title keyword matching is case-insensitive; where a case expects a recurrence, check it as an applicable property in the invariants layer; the empty-text case passes only if cli.main exits 1 with empty stdout and no model call; a CLI exit code 2 is case ERROR and makes the run INCONCLUSIVE; write results to evidence/eval-results.json with model name and settings but never the API key. Mark the finished tasks done in tasks.md.
+```
+
+Copilot implemented the validation, the Gemini client, the prompt, the core and the CLI, the CLI-driven harness, and the Part-1B instructions in the Git-root `README.md`, and marked those tasks done. It ran pytest with fake transports only: **67 passed and 3 failed**. The three failures were in the unchanged Phase 2 tests, which read `CaptureResult.stdout` where pytest provides `.out`. It left them alone as I had told it to. It did not run the live evaluation, did not access `.env`, and did not generate `evidence/eval-results.json`.
+
+Committed as `f35b8fe` (`1B: initial implementation (stage B)`, 20:46). I then ran T019 myself and tagged that commit `1B-initial-generation`.
+
+### Repair set 1 (quality gates, ruff and bandit): attempt 1
+
+```text
+Repair attempt 1 of 2 for the quality-gate failures recorded in evidence/quality-gates-initial.txt (ruff: 19 errors; bandit: 1 medium B310 in src/reminder_agent/client.py).
+
+Fix the root causes only:
+
+- ruff: fix the unused imports, the import ordering, the typing.Mapping import (use collections.abc), the redundant socket.timeout alias, and wrap the long lines. For the imports placed after sys.path in .harness/run_eval.py, restructure the code so the imports are valid (for example, do the path setup and imports inside a function). Do not use `# noqa`, and do not change the Ruff configuration or line length.
+
+- bandit B310: keep urllib for HTTPS requests, but enforce that only https URLs are allowed and avoid calling urllib.request.urlopen directly (for example, build an opener limited to the HTTPS handler and call opener.open). Do not use `# nosec`.
+
+Constraints: behaviour must not change; pytest must still pass all 70 tests; do not edit evals/dataset.json, expected values, thresholds
+[The chat export cut the prompt off at this point.]
+```
+
+The export truncated the end of this prompt, after "thresholds". The constraints it did preserve match the limits I describe in note 6 below. Committed as `562208f` (`1B: repair attempt 1 (ruff and bandit, partial)`, 21:13).
+
+### Repair set 1: attempt 2
+
+```text
+ruff check --fix
+```
+
+I ran this terminal command myself. It applies Ruff's automatic fixes, and it was repair attempt 2 for the same failure set. There is no Copilot prompt for this attempt. Committed as `a24c149` (`1B: repair attempt 2 (ruff fix)`, 21:15).
+
+### Repair set 2 (configuration defect): attempt 1
+
+```text
+Repair for a new failure set (configuration defect), attempt 1 of 2: running `python .harness/run_eval.py` fails with "Evaluation error: LLM_MODEL must be configured" although LLM_MODEL is set in the git-ignored .env, because the harness reads only os.environ. The application's client.py already supports environment variables with a .env fallback.
+
+Fix only this: make the harness read LLM_MODEL (and the model settings it records) through the same environment-over-.env configuration code that src/reminder_agent/client.py uses; reuse it, do not duplicate it. The API key must never be printed, logged, returned or written to the evidence file.
+
+Constraints: do not change any evaluator, scoring weight, threshold, pass/fail rule, status handling, or evals/dataset.json; do not modify existing tests; you may add one new test that proves the harness resolves the model name from a .env file in a temporary directory (fake values only). No `# noqa`, no `# nosec`, no Ruff config changes. Do not read, print or modify the real .env, do not run the live evaluation, and do not create any git tag.
+```
+
+Copilot changed the harness to resolve the model through `client.load_settings()`, which includes the `.env` fallback and never exposes the API key, and added a temporary-directory regression test that checks both the report and the evidence file. All 6 harness tests passed. It reported a pre-existing Ruff import-order issue in the test file, so it ran its remaining lint checks with that one rule ignored. It did not run the live evaluation.
+
+Committed as `0e63c89` (`1B: fix harness .env configuration loading`, 21:32). Files changed: `.harness/run_eval.py` and `tests/test_harness.py`.
+
+### My notes
+1. **Why stages:** the agent built the tests, the dataset and the code, and I ran the live evaluation myself. This keeps `.env` out of the agent's reach and keeps the first live run under my control.
+2. **Tests before code:** stage A came first so that the expected values were fixed from the specification before any implementation existed.
+3. **Evaluator rules written into the prompt in advance:** the stage B prompt states the harness rules (case-insensitive keywords, recurrence checked as an invariant, the empty-input contract, exit 2 as `ERROR`, evidence without the key) before any evaluation ran, so they are on record as set before the first result.
+4. **The three failing tests:** Copilot reported 67 passed and 3 failed after stage B. The failures were in the Phase 2 CLI tests, which read `CaptureResult.stdout` where pytest's capture object uses `.out`. I had told Copilot not to edit Phase 2 tests, so it left them. I changed that one line myself after the tag (`6796252`), so the tagged first implementation still contains the failing tests.
+5. **Two repair sets:** the constitution counts repair attempts per set of failures. The quality-gate failures were one set, and I used both attempts on it (`562208f`, `a24c149`). The `.env` defect was a new set with its own count. Attempt 1 of 2 fixed it, so the second attempt was not needed.
+6. **Limits I gave in the repair prompts:** no change to evaluators, weights, thresholds, pass or fail rules, status handling or the dataset; no `# noqa` or `# nosec`; no reading, printing or editing of the real `.env`; no live evaluation; no tag. Reformatting the evaluator file was still needed to satisfy ruff, which I disclose in the harness log.
+7. **What happened after the tag, in order:**
+   - `6796252` (20:48): the manual one-line fix to the CLI test.
+   - `9e3e17f` (21:00): the quality gate results before any repair, saved in `evidence/quality-gates-initial.txt` (ruff 19 errors, bandit 1 Medium issue, pytest 70 passed).
+   - `562208f` (21:13) and `a24c149` (21:15): repair set 1, attempts 1 and 2.
+   - `0e63c89` (21:32): repair set 2, the `.env` configuration fix.
+   - `3220cec` (22:03): the first conclusive evaluation, a PASS on all 19 cases with `gemini-3.5-flash-lite`, after three inconclusive runs caused by rate limits.
+   The details of each step and my decision are in `evidence/harness-log.md`.
+8. **The evaluation itself is not a prompt.** I ran the harness myself, four times, and kept each result as its own file in `evidence/`: runs 1 to 3 as `INCONCLUSIVE` and run 4 as `PASS`. The `mean=1.0` on the inconclusive runs is the mean of only the cases that ran, so those runs are not passes.
+9. **Tags:** `1B-initial-generation` points at the first generated implementation, and `1B-final` marks the final state.
+10. **Truncated prompts:** two of the prompts above (stage A and the first quality-gate repair) were cut off by the chat export, and I could not recover the rest from my evidence folder. I kept the preserved text and marked where it stops, instead of reconstructing the missing part from memory.
