@@ -1,6 +1,6 @@
 # Prompts used (Part 1A)
 
-Tools: GitHub Spec Kit with GitHub Copilot (Agent mode) in VS Code for the /speckit-* steps. Claude (chat assistant) was used for guidance, review feedback and drafting the harness script; I reviewed and decided each change.
+Tools: GitHub Spec Kit with GitHub Copilot (Agent mode) in VS Code for the /speckit-* steps. Claude (chat assistant) was used for guidance, review feedback, and drafting the harness script and test files; I reviewed and decided each change.
 
 ## 1. /speckit-constitution
 
@@ -55,10 +55,7 @@ Answers I chose (from Copilot's questions):
 - Empty tag filter: validation error, exit 1.
 
 My own notes on what I found and why I chose these:
-(Co-Pilot suggested me following "Next Actions
-No critical issues block /speckit-implement. Consider clarifying T010’s wording first. Suggested replacement: “include all tasks or only tasks containing the exact requested tag.” No files were modified."
-
-So I gave Agent this command "In tasks.md, change T010's wording to: "include all tasks or only tasks containing the exact requested tag". Change nothing else." )
+(write 3-4 sentences here in your own words: which ambiguities you noticed in the spec and what could have gone wrong if they stayed unresolved)
 
 ## 4. /speckit-plan
 
@@ -90,7 +87,7 @@ Do not change any other behaviour.
 ```
 
 Why I made this change (my own words):
-(write 2-3 sentences: the plan added behaviour the spec did not approve, e.g. any-match list filter and edit no-op)
+(write 2-3 sentences here in your own words: what the plan added that the spec did not approve, and why you fixed it through the spec)
 
 ## 5. /speckit-tasks
 
@@ -115,11 +112,31 @@ In tasks.md, change T010's wording to: "include all tasks or only tasks containi
 ```
 
 My notes on what analyze found and what I changed:
-(write 2-3 sentences here in your own words)
+(Co-Pilot suggested me following "Next Actions
+No critical issues block /speckit-implement. Consider clarifying T010’s wording first. Suggested replacement: “include all tasks or only tasks containing the exact requested tag.” No files were modified."
 
-## 7. Harness (written before implementation)
+So I gave Agent this command "In tasks.md, change T010's wording to: "include all tasks or only tasks containing the exact requested tag". Change nothing else." )
+
+## 7. Harness and tests (written before implementation)
 
 - `.harness/run_harness.py` and `pytest.ini` were drafted with AI assistance (Claude) and reviewed by me. They run three gates: `ruff check src tests`, `bandit -r src -ll -q`, `pytest tests -q`, and write structured results under `evidence/harness-results/`.
 - Tests under `tests/` are derived from spec.md (AC-01 to AC-22) and the plan's AC-to-test table, drafted with AI assistance and reviewed by me against the spec.
+- Tests and harness were committed and tagged `1A-harness-baseline` before running implement.
 
 the tests and harness were drafted with Claude’s help and reviewed by me (Dilraj).
+
+## 8. /speckit-implement
+
+```
+Implement ALL tasks T001 through T012 in tasks.md, in order, creating only files under src/todo/. Do not stop after the MVP phase.
+Do NOT create, edit, delete or skip anything in tests/ or .harness/, and do not change spec.md, plan.md, or the constitution. Do not use `# noqa` or `# nosec`.
+Error messages go to stderr. An illegal status transition message must contain the words "illegal transition". A task-not-found message must contain "not found". An unknown status value is a validation error and its message must not contain "illegal transition".
+Do not run the tests or the harness; report which tasks are complete.
+```
+
+Result and checks (my own words):
+(write what Copilot reported, and the result of the integrity check `git diff --stat 1A-harness-baseline -- tests .harness`)
+
+## 9. Harness run
+
+No prompt. First run of `python .harness\run_harness.py` after implementation: see evidence/harness-log.md and evidence/harness-results/.
