@@ -62,6 +62,7 @@ Update the version, the Last Amended date and the Sync Impact Report.
    - The Sync Impact Report says 1.0.0 -> 1.1.0 with no other principles changed.
    - The new settings (0.2, 30 seconds, three attempts) appear in both Principle IV and Operational Constraints, with the same values.
 4. **Constitution and specification:** The constitution requires at least 15 evaluation cases. The specification I wrote later requires at least 18, which is stricter and does not conflict.
+5. **Commit and push:** Two commits carry the name `1B: constitution v1.1.0`. `0f2b481` carried the amendment itself: it changed `constitution.md` (28 lines) and this log (13 lines), 35 insertions and 6 deletions in total. `69afcfd` came later and only updated this log (`prompts-used.md`, 25 lines, 20 insertions and 5 deletions). It did not touch the constitution. The same pattern happens in the spec step, where `d1f2d3a` is a second commit that changed only the log (see section 3, note 6).
 
 ## 3. /speckit-specify
 
@@ -120,7 +121,7 @@ Success measures: schema validity 100%, adversarial refusal 100%, no secrets in 
    - `Select-String -Path specs\*\spec.md -Pattern "NEEDS CLARIFICATION"` printed nothing, so no clarification markers are left in the spec.
    - My first attempt used a wrong path (`specs\3\spec.md`) and failed with "path does not exist". The folder is `specs\001-natural-language-reminder-agent`, so the wildcard form above is the valid check.
    - I filtered `git status --short` for `.env` and nothing appeared, so `.env` was not staged or untracked. To confirm it is ignored, I ran `git check-ignore -v .env`, which printed `.gitignore:1:.env  .env`. Line 1 of `.gitignore` is the rule that ignores it, so the key file cannot be committed by accident.
-6. **Commit and push:** `git commit -m "1B: spec"` created `0633a49` (2 files, 152 insertions: `spec.md` and `checklists/requirements.md`). `git push` succeeded (`69afcfd..0633a49  main -> main`) with no push-protection block, because the commit contains no key.
+6. **Commit and push:** `git commit -m "1B: spec"` created `0633a49` (2 files, 152 insertions: `spec.md` and `checklists/requirements.md`). `git push` succeeded (`69afcfd..0633a49  main -> main`) with no push-protection block, because the commit contains no key. A second commit, `d1f2d3a`, also has the message `1B: spec`, but it only updated this log: it changed `evidence/prompts-used.md` (1 file, 74 insertions, 2 deletions) and did not touch the spec. So the spec itself was committed once, in `0633a49`, and the second commit only has the same name.
 
 ## 4. /speckit-clarify
 
@@ -164,7 +165,7 @@ Copilot recorded all five proposals in the spec. Together with the two round 1 d
 4. **What changed in the spec:** Copilot reported that all seven decisions (two from round 1, five from round 2) are recorded in the spec. The 0.85 threshold is unchanged, no clarification markers remain, and no hooks were configured.
 5. **Still open after clarify:** Neither round asked what the three *ambiguous* cases should produce (a clarification question, or the most likely reading). I will decide this when I write `evals/dataset.json`, and any change to the spec must go through a documented spec change. The name of the field for expected title keywords was also not covered by clarify. I fixed it as `title_keywords` in the plan prompt instead (see section 5, note 2).
 6. **Checks after clarification:** I re-ran the `NEEDS CLARIFICATION` search on the spec and no markers remain, as Copilot also reported.
-7. **Commit and push:** I did not commit the clarify changes on their own. They went in with the plan commit, `e725e05`.
+7. **Commit and push:** I committed the clarify step on its own as `14c061a` (`1B: clarify`), and pushed it before the plan update. It contained two files: `evidence/prompts-used.md`, which is this log (79 lines changed), and `specs/001-natural-language-reminder-agent/spec.md`, which holds the recorded decisions (38 lines changed). In total it was 108 insertions and 9 deletions.
 
 ## 5. /speckit-plan
 
@@ -223,4 +224,4 @@ When I read the first plan, I saw that the harness was supposed to call `core.ru
    - `Select-String -Path specs\*\plan.md -Pattern "cli.main"` found it in `plan.md` at lines 9, 19 and 106, so the plan now says the harness goes through the CLI.
    - `git status --short` showed `evidence/prompts-used.md` and `spec.md` modified and the plan files untracked, and no `.env`.
 5. **New file list in the commit:** `contracts/cli.md`, `contracts/gemini-rest.md`, `contracts/reminder-result.schema.json`, `data-model.md`, `plan.md`, `quickstart.md` and `research.md`, plus the modified `spec.md` and `prompts-used.md`.
-6. **Commit and push:** `git add .` then `git commit -m "1B: plan update"` created `e725e05` (9 files changed, 442 insertions, 9 deletions). `git push` succeeded (`14c061a..e725e05  main -> main`) with no push-protection block.
+6. **Commit and push:** `git add .` then `git commit -m "1B: plan update"` created `e725e05` (9 files changed, 442 insertions, 9 deletions). `git push` succeeded (`14c061a..e725e05  main -> main`) with no push-protection block. A later push moved `main` from `e725e05` to `e58e4bc`, so one more commit, `e58e4bc`, was pushed on top of this one after the plan update.
