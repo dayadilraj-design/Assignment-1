@@ -56,7 +56,7 @@ description: "Implementation tasks for the Smart Todo CLI source package"
 
 ### Implementation
 
-- [ ] T010 [US3] Extend the list operation in `src/todo/service.py` to include all tasks or only tasks containing any exact, case-sensitive requested tag, then sort by priority `high`, `medium`, `low` and ascending numeric ID. Keep filtering and sorting efficient enough to meet the 10,000-task list target of a median at most 2 seconds across five full CLI runs (FR-007, FR-008, FR-011, AC-04, AC-05, AC-06, AC-20, NFR-001, NFR-003).
+- [ ] T010 [US3] Extend the list operation in `src/todo/service.py` to include all tasks or only tasks containing the exact requested tag, then sort by priority `high`, `medium`, `low` and ascending numeric ID. Keep filtering and sorting efficient enough to meet the 10,000-task list target of a median at most 2 seconds across five full CLI runs (FR-007, FR-008, FR-011, AC-04, AC-05, AC-06, AC-20, NFR-001, NFR-003).
 - [ ] T011 [US3] Complete the `list [--tag TAG]` handler in `src/todo/cli.py`: accept at most one optional filter, reject an explicitly empty filter as a validation error, call the sorted/filtering service operation, and emit the complete compact JSON array (including `[]`) followed by one newline (FR-007, FR-008, FR-011, FR-012, FR-015, AC-04, AC-05, AC-06, AC-16, AC-19, NFR-001).
 
 ## Phase 6: Polish & Cross-Cutting Concerns
