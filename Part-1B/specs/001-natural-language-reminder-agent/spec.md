@@ -18,6 +18,7 @@
 - Q: What should happen when a requested reminder time is at or before `--now`? → A: Return `needs_clarification` and ask the user to provide a future time.
 - Q: How should vague time-of-day words and terms such as “later” or “soon” be interpreted? → A: Use 09:00 for morning, 14:00 for afternoon, 18:00 for evening, and 21:00 for night; “later” or “soon” without a time requires clarification.
 - Q: How should recurrence affect `remind_at` and non-creation actions? → A: `remind_at` is the first occurrence; reschedule, snooze, and cancel results always use recurrence `none`.
+- Q: How should “next <weekday>” be resolved? → A: It means the first occurrence of that weekday strictly after the calendar date in `--now`; if `--now` falls on that weekday, it means seven days later.
 - Q: How are evaluation layer scores calculated and how often is each case run? → A: Schema is 1 or 0; invariants equal passed applicable checks divided by applicable checks; semantic equals passed status, action, remind-at, and title-keyword checks divided by four; each case runs once per evaluation.
 - Q: How should the no-JSON empty-input case be evaluated against the result schema? → A: Validate it against a separate CLI outcome contract for exit 1, empty stdout, and a safe stderr diagnostic; verify no model call in its applicable invariants and score its semantic expectations against the invalid-input outcome rather than requiring a reminder-result JSON object.
 
@@ -92,7 +93,7 @@ A project maintainer runs the complete evaluation dataset and receives per-case 
 ### Functional Requirements
 
 - **FR-001**: The application MUST accept exactly one non-empty unstructured reminder request per command-line invocation and require a valid ISO local datetime without a UTC offset as `--now`; it MUST reject empty or whitespace-only requests and offset-aware values as invalid input.
-- **FR-002**: The application MUST use the supplied `--now` value as the sole reference time for interpreting relative dates and MUST NOT substitute the system clock.
+- **FR-002**: The application MUST use the supplied `--now` value as the sole reference time for interpreting relative dates and MUST NOT substitute the system clock. “Next <weekday>” MUST mean the first occurrence of that weekday strictly after the calendar date in `--now`; if `--now` falls on that weekday, it MUST mean seven days later.
 - **FR-003**: The application MUST use a Gemini model to interpret the request and MUST allow the model name to be selected through `LLM_MODEL`.
 - **FR-004**: The application MUST accept its API key only from `GEMINI_API_KEY` or a local `.env` file excluded from version control. It MUST NOT log or print the key, and credentials MUST NOT be committed.
 - **FR-005**: The application MUST use Python 3.12 and only the Python standard library at runtime; model requests MUST use HTTPS through `urllib`. Model calls MUST use temperature `0.2`, a 30-second timeout, and no more than three total attempts, retrying only HTTP 429 and 503 responses.

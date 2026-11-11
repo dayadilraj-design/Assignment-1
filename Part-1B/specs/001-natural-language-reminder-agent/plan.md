@@ -87,6 +87,7 @@ tests/
 ├── test_client.py
 ├── test_core.py
 ├── test_harness.py
+├── test_prompt.py
 └── test_validation.py
 
 .harness/

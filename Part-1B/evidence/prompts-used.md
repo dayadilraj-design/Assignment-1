@@ -252,3 +252,33 @@ Generate tasks ordered so that tests and the evaluation dataset come before impl
    - T019 creates the `1B-initial-generation` tag from the repository root before any evaluation-driven repair, and it must not overwrite an existing tag.
    - **I will not run plain `/speckit-implement`.** It would try to run all 24 tasks in one go, including the live evaluation (T022) and the human `ACCEPT` or `REJECT` record (T023). So I decided to split the work into stages. The agent builds the tests, dataset and code, but I run the live evaluation myself. I did this for two reasons: the constitution says the agent must not read or touch `.env`, and the first live run should not be used up by the agent before I have looked at everything. The harness log is also mine to write, because the `ACCEPT` or `REJECT` decision has to be a human one.
 8. **Commit and push:** I committed the task list on its own as `483c7d4` (`1B: tasks`): one file, `specs/001-natural-language-reminder-agent/tasks.md`, 162 insertions. It was pushed as `d3ce117..483c7d4`. The push just before it (`e58e4bc..d3ce117`) came earlier, while `tasks.md` was still untracked, so `d3ce117` does not contain the task list. It was a log-only commit: it changed only `evidence/prompts-used.md`, like `d1f2d3a` and `69afcfd` did in earlier steps.
+
+## 8. /speckit-analyze
+
+```text
+/speckit-analyze (run with no extra text)
+```
+
+### The two findings I acted on
+
+1. **"Next Monday" was not defined.** The spec uses "next Monday" as an example of a relative date, but it never said what the phrase means, especially when `--now` itself falls on a Monday. Copilot suggested defining "next <weekday>" as the first occurrence of that weekday strictly after the date in `--now`, and seven days later if `--now` is already on that weekday. It also suggested adding a dataset case with a Monday reference date to check the rule.
+2. **The plan and the task list disagreed about the test files.** Task T006 writes prompt tests in `tests/test_prompt.py`, but the project tree in `plan.md` did not list that file. Copilot offered two ways to fix it: add `tests/test_prompt.py` to the plan's tree, or change T006 to put the prompt tests in `tests/test_core.py`.
+
+### My answer
+
+```text
+Apply both suggestions. For 1, add the next-weekday definition to spec.md (in the requirements and in the Clarifications section). For 2, add tests/test_prompt.py to the project tree in plan.md and leave T006 unchanged. Do not change anything else.
+```
+
+Copilot applied only those two changes: the "next <weekday>" rule in the spec's clarifications and in FR-002, and `tests/test_prompt.py` in the plan's project tree. It reported that `git diff --check` passed, that no tests were run, and that these were documentation-only edits.
+
+### My notes
+1. **Why the definition mattered:** The harness compares `remind_at` exactly, and the dataset's expected values must come from the spec only (T008). Without a rule, the expected date for "next Monday" would have been my guess, and a model answer could be correct under a different reading and still lose points. The rule removes that guess, and it gives a precise answer for the awkward case where the reference date is already a Monday.
+2. **Why I fixed the plan and not the tasks:** The plan was missing a file that the task list already named, so adding one line to the plan's tree was the smaller change. I left T006 alone because it already lists both `test_core.py` and `test_prompt.py`, and the tasks file carries the locked and protected markers, so I preferred not to edit it without a reason.
+3. **What I chose not to do:** I did not add the suggested dataset case now. The dataset does not exist yet (it is task T008), so adding it belongs there. When I write it, I will include a case with `--now` on a Monday and derive its expected `remind_at` from the new rule, never from model output. I also told Copilot not to change anything else, so no other file or requirement was touched.
+4. **Spec change handled the right way:** This was a change to the specification, which the constitution allows only through the Spec Kit artifacts with the change history kept. The new rule went into both the Clarifications section (which is the change record) and the requirement (FR-002). The Clarifications section now has nine entries. The threshold and the scoring rules are unchanged, and no locked artifact was affected because the dataset and the harness are not written yet.
+5. **Checks I ran:**
+   - `Select-String -Path specs\*\spec.md -Pattern "strictly after"` found the rule twice: in the Clarifications entry (line 21) and in FR-002 (line 96).
+   - `Select-String -Path specs\*\plan.md -Pattern "test_prompt"` found `test_prompt.py` in the project tree (line 90).
+   - `git diff --stat` showed exactly two files changed (`plan.md` with 1 insertion and `spec.md` with 3 changed lines), 3 insertions and 1 deletion in total. The one deletion is the old FR-002 line, which was reworded.
+6. **Commit and push:** <<PASTE the commit message, hash and `git push` result for these two edits. The same terminal also showed a push `483c7d4..617ac4f` before these checks: state what `617ac4f` contained, probably a log-only update>>.
