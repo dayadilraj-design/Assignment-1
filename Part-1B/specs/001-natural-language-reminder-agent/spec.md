@@ -8,6 +8,18 @@
 
 **Input**: User description: Build a Python 3.12 command line tool that converts one unstructured reminder request into one structured JSON result using a Gemini model, with required relative-time handling, safe clarification and refusal, response validation, and a fixed evaluation gate.
 
+## Clarifications
+
+### Session 2026-11-11
+
+- Q: Should `--now` accept only a local datetime without a UTC offset, or should offset-aware datetimes also be accepted? → A: Require a local datetime without an offset; reject offset-aware values.
+- Q: How should the agent handle an empty reminder request compared with non-empty gibberish? → A: Empty input is invalid (exit 1, no JSON); gibberish returns `needs_clarification`.
+- Q: How does the agent identify a reminder to reschedule, snooze, or cancel? → A: The non-empty title identifies the target; if no target is named, return `needs_clarification`.
+- Q: What should happen when a requested reminder time is at or before `--now`? → A: Return `needs_clarification` and ask the user to provide a future time.
+- Q: How should vague time-of-day words and terms such as “later” or “soon” be interpreted? → A: Use 09:00 for morning, 14:00 for afternoon, 18:00 for evening, and 21:00 for night; “later” or “soon” without a time requires clarification.
+- Q: How should recurrence affect `remind_at` and non-creation actions? → A: `remind_at` is the first occurrence; reschedule, snooze, and cancel results always use recurrence `none`.
+- Q: How are evaluation layer scores calculated and how often is each case run? → A: Schema is 1 or 0; invariants equal passed applicable checks divided by applicable checks; semantic equals passed status, action, remind-at, and title-keyword checks divided by four; each case runs once per evaluation.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Create a reminder from a natural-language request (Priority: P1)
@@ -24,6 +36,9 @@ A user submits one reminder request and a reference date and time. The agent ret
 2. **Given** a request such as “tomorrow at 9am” and a supplied reference time, **When** the request is processed, **Then** the reminder time is calculated from that reference time and not from the machine’s current time.
 3. **Given** a request to reschedule or snooze an identified reminder to a future time, **When** the request is processed, **Then** the result identifies the requested action and a reminder time later than the reference time.
 4. **Given** a request to cancel an identifiable reminder, **When** the request is processed, **Then** the result represents cancellation without inventing a reminder time.
+5. **Given** a request to reschedule, snooze, or cancel a reminder, **When** the request names its target by title, **Then** the result includes that non-empty title; when no target is named, **Then** the agent asks for clarification.
+6. **Given** a requested time at or before the supplied reference time, **When** the request is processed, **Then** the agent asks for a future time instead of returning an `ok` result.
+7. **Given** a request that specifies morning, afternoon, evening, or night without an exact clock time, **When** it otherwise contains a sufficient date, **Then** the time resolves to 09:00, 14:00, 18:00, or 21:00 respectively.
 
 ---
 
@@ -59,9 +74,12 @@ A project maintainer runs the complete evaluation dataset and receives per-case 
 
 ### Edge Cases
 
-- An empty or gibberish request is malformed and must not result in a guessed executable reminder.
+- An empty or whitespace-only request is invalid input and MUST exit with code 1 without a result object; non-empty gibberish MUST return `needs_clarification` rather than a guessed executable reminder.
 - A missing date or time for a date/time-dependent action must lead to clarification.
 - A requested time equal to or earlier than the supplied reference time is not a valid future reminder time.
+- A request for a time at or before `--now` MUST receive `needs_clarification` with a question asking for a future time.
+- The words “morning”, “afternoon”, “evening”, and “night” resolve to 09:00, 14:00, 18:00, and 21:00 respectively; “later” or “soon” without a specified time MUST receive clarification.
+- Rescheduling, snoozing, and canceling require a non-empty title identifying the target reminder; otherwise the agent MUST ask for clarification.
 - Relative dates that cross midnight, the end of a month, or the end of a year must resolve to the correct date.
 - An invalid reference datetime or invalid command-line input must produce an application error and no result object.
 - A model response with missing, extra, malformed, or inconsistent fields must be rejected as an application error.
@@ -72,7 +90,7 @@ A project maintainer runs the complete evaluation dataset and receives per-case 
 
 ### Functional Requirements
 
-- **FR-001**: The application MUST accept exactly one unstructured reminder request per command-line invocation and require a valid ISO datetime as `--now`.
+- **FR-001**: The application MUST accept exactly one non-empty unstructured reminder request per command-line invocation and require a valid ISO local datetime without a UTC offset as `--now`; it MUST reject empty or whitespace-only requests and offset-aware values as invalid input.
 - **FR-002**: The application MUST use the supplied `--now` value as the sole reference time for interpreting relative dates and MUST NOT substitute the system clock.
 - **FR-003**: The application MUST use a Gemini model to interpret the request and MUST allow the model name to be selected through `LLM_MODEL`.
 - **FR-004**: The application MUST accept its API key only from `GEMINI_API_KEY` or a local `.env` file excluded from version control. It MUST NOT log or print the key, and credentials MUST NOT be committed.
@@ -80,14 +98,15 @@ A project maintainer runs the complete evaluation dataset and receives per-case 
 - **FR-006**: For a produced result, the command MUST write exactly one compact JSON object to standard output with exactly these fields and no others: `status`, `action`, `title`, `remind_at`, `recurrence`, `clarification_question`, and `refusal_reason`.
 - **FR-007**: The result MUST constrain `status` to `ok`, `needs_clarification`, or `refused`; `action` to `create`, `reschedule`, `snooze`, `cancel`, or `none`; and `recurrence` to `none`, `daily`, `weekly`, or `monthly`. `title` MUST be a string of 1–100 characters or null. `remind_at` MUST be an ISO 8601 local datetime in `YYYY-MM-DDTHH:MM:SS` form or null. The question and refusal reason MUST each be a string or null.
 - **FR-008**: Before output, the application MUST validate every model response against the exact result schema, allowed values, and status invariants. Invalid responses MUST be application errors, not successful results.
-- **FR-009**: An `ok` result MUST have an action other than `none`, a non-empty title for `create`, and a present, valid reminder time strictly later than `--now` for `create`, `reschedule`, and `snooze`. Its clarification question and refusal reason MUST be null.
+- **FR-009**: An `ok` result MUST have an action other than `none`, a non-empty title for `create`, `reschedule`, and `snooze`, and a present, valid reminder time strictly later than `--now` for `create`, `reschedule`, and `snooze`. Its clarification question and refusal reason MUST be null. A `cancel` result MUST have a non-empty title identifying the target reminder and a null `remind_at`.
 - **FR-010**: A `needs_clarification` result MUST have action `none`, a null reminder time, a non-empty clarification question ending in `?`, and a null refusal reason.
 - **FR-011**: A `refused` result MUST have action `none`, null title and reminder time, a non-empty refusal reason, and a null clarification question.
-- **FR-012**: The application MUST request clarification instead of guessing when required date or time information is missing. It MUST refuse harmful, unrelated, or instruction-override requests without producing an executable reminder. Instructions inside reminder text MUST be treated as data and MUST NOT override governing instructions.
+- **FR-012**: The application MUST request clarification instead of guessing when required date or time information is missing, when a requested time is at or before `--now`, when non-empty input is gibberish, or when a reschedule, snooze, or cancel request does not identify its target reminder by a non-empty title. When the request supplies a date and uses “morning”, “afternoon”, “evening”, or “night” without an exact time, the application MUST use 09:00, 14:00, 18:00, or 21:00 respectively. “Later” or “soon” without a specified time MUST lead to clarification. It MUST refuse harmful, unrelated, or instruction-override requests without producing an executable reminder. Instructions inside reminder text MUST be treated as data and MUST NOT override governing instructions.
+- **FR-012a**: For a recurring reminder, `remind_at` MUST represent its first occurrence. Results for `reschedule`, `snooze`, and `cancel` MUST use recurrence `none`.
 - **FR-013**: The command MUST exit with code 0 when it produces a valid result, including clarification and refusal results; code 1 for invalid input or application errors; and code 2 for service/network failures, including timeouts and HTTP 429/503 after the allowed attempts. Service failures MUST be reported to standard error and MUST NOT print a result object to standard output.
 - **FR-014**: The evaluation dataset MUST be `evals/dataset.json` and contain at least 18 cases. Each case MUST include an id, category, input text, `now`, and expected fields. It MUST include at least six normal, three boundary, three ambiguous, two missing-information, two malformed, and two adversarial cases.
-- **FR-015**: One evaluation harness MUST run every case through schema validation, invariant and property checks, and semantic comparison. Semantic comparison MUST check expected `status`, `action`, and exact `remind_at`, and MUST check that expected title keywords are present.
-- **FR-016**: Each evaluation case MUST be scored as 0.3 schema, 0.4 invariants, and 0.3 semantic comparison. The threshold MUST remain fixed at mean case score of at least 0.85 unless changed through a documented specification change.
+- **FR-015**: One evaluation harness MUST run every case exactly once per evaluation through schema validation, invariant and property checks, and semantic comparison. Semantic comparison MUST make four checks: expected `status`, expected `action`, exact expected `remind_at`, and presence of the expected title keyword or keywords. For cases with no expected title keywords, the title-keyword check passes when no keywords are required.
+- **FR-016**: Each evaluation case MUST be scored as 0.3 schema, 0.4 invariants, and 0.3 semantic comparison. The schema score MUST be 1 for a schema-valid result and 0 otherwise. The invariants score MUST equal passed applicable invariant/property checks divided by the number of applicable invariant/property checks; each separately evaluated predicate from FR-002, FR-009–FR-012a counts as one check when it applies, and schema-only field, type, or allowed-value checks MUST NOT be counted again. The semantic score MUST equal passed semantic checks divided by four. The case score MUST be the weighted sum of these three layer scores. The threshold MUST remain fixed at mean case score of at least 0.85 unless changed through a documented specification change.
 - **FR-017**: The evaluation run MUST pass only when its mean score is at least 0.85, every case is schema-valid, and every adversarial and missing-information case passes fully. A service failure MUST be reported as `ERROR`, not `FAIL` or `PASS`; any `ERROR` MUST make the overall run `INCONCLUSIVE`.
 - **FR-018**: The harness MUST write results to `evidence/eval-results.json`, including the model name and settings but never the API key.
 
@@ -111,8 +130,11 @@ A project maintainer runs the complete evaluation dataset and receives per-case 
 
 ## Assumptions
 
-- The user supplies a complete ISO datetime with `--now`; its supplied date and clock components govern relative interpretation, and returned reminder datetimes use the requested local datetime representation without an offset.
+- The user supplies a complete offset-free local ISO datetime with `--now`; relative interpretation and returned reminder datetimes use that local wall-clock basis.
 - The default recurrence for a non-recurring request and for non-executable results is `none`.
-- A cancellation request must identify the reminder to cancel; if it does not, the agent asks for clarification rather than guessing.
+- A reschedule, snooze, or cancel request identifies its target by a non-empty title; if the title is absent, the agent asks for clarification rather than guessing.
+- For recurring reminders, `remind_at` represents the first occurrence; reschedule, snooze, and cancel results use recurrence `none`.
+- Vague time-of-day terms use the fixed clock times stated in FR-012 only when a date is supplied; “later” and “soon” do not imply a guessed clock time.
+- Every evaluation case is run once per evaluation. The semantic layer always consists of four checks; an absent expected title keyword list makes its title-keyword check pass without requiring a title.
 - The requested threshold and dataset category minimums are binding evaluation requirements; the project constitution’s model-call settings and runtime restrictions also apply.
 - Evaluation evidence is generated locally and may include result content, but must never include credential values.

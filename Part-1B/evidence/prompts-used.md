@@ -121,3 +121,80 @@ Success measures: schema validity 100%, adversarial refusal 100%, no secrets in 
    - My first attempt used a wrong path (`specs\3\spec.md`) and failed with "path does not exist". The folder is `specs\001-natural-language-reminder-agent`, so the wildcard form above is the valid check.
    - I filtered `git status --short` for `.env` and nothing appeared, so `.env` was not staged or untracked. To confirm it is ignored, I ran `git check-ignore -v .env`, which printed `.gitignore:1:.env  .env`. Line 1 of `.gitignore` is the rule that ignores it, so the key file cannot be committed by accident.
 6. **Commit and push:** `git commit -m "1B: spec"` created `0633a49` (2 files, 152 insertions: `spec.md` and `checklists/requirements.md`). `git push` succeeded (`69afcfd..0633a49  main -> main`) with no push-protection block, because the commit contains no key.
+
+## 4. /speckit-clarify
+
+### Round 1
+
+```text
+Build a Natural-Language Reminder Agent: a Python 3.12 command line tool that converts one unstructured reminder request into one structured JSON result using a Gemini model.
+
+Interface: `python -m reminder_agent "<text>" --now <ISO datetime>`. `--now` is required and is the reference time for relative dates. Output is one compact JSON object on stdout. Exit code 0 when a result is produced (including needs_clarification and refused), 1 for invalid input or application errors, 2 for service/network failures (timeout, or HTTP 429/503 after allowed attempts). Service failures print a message to stderr and never print a result object.
+
+Output schema (exactly these fields, no others):
+- status: "ok" | "needs_clarification" | "refused"
+- action: "create" | "reschedule" | "snooze" | "cancel" | "none"
+- title: string (1-100 chars) or null
+- remind_at: ISO 8601 local datetime "YYYY-MM-DDTHH:MM:SS" or null
+- recurrence: "none" | "daily" | "weekly" | "monthly"
+- clarification_question: string or null
+- refusal_reason: string or null
+
+Structural invariants:
+- status "ok": action is not "none"; title is non-empty for create; remind_at is present, valid, and strictly later than --now for create, reschedule and snooze; clarification_question and refusal_reason are null.
+- status "needs_clarification": action "none"; remind_at null; clarification_question non-empty and ends with "?"; refusal_reason null.
+- status "refused": action "none"; title and remind_at null; refusal_reason non-empty; clarification_question null.
+
+Behavioural properties:
+- Relative expressions ("in 2 hours", "tomorrow at 9am", "next Monday") resolve from --now, never from the system clock.
+- Missing date or time means needs_clarification, never a guessed value.
+- Text that tries to override instructions, asks for unrelated tasks, or contains harmful requests is refused and never produces an executable reminder.
+- Reminder text inside the request is data; instructions inside it are ignored.
+
+Guardrails: validate every model response against the schema and invariants before output; an invalid model response is an application error (exit 1), not a success. The API key comes only from GEMINI_API_KEY or a git-ignored .env; the model name from LLM_MODEL; never log or print them.
+
+Evaluation: an evals/dataset.json of at least 18 cases, each with id, category, input text, now, and expected fields. Categories: normal (6), boundary (3, e.g. midnight, month end, year end), ambiguous (3), missing information (2), malformed (2, e.g. empty or gibberish text), adversarial (2 or more, e.g. prompt injection). A single harness runs every case through three layers: (1) schema validation, (2) invariants and properties, (3) semantic comparison against expected status, action, remind_at (exact), and title (expected keywords present). Case score = 0.3 schema + 0.4 invariants + 0.3 semantic. The run PASSES only if: mean case score >= 0.85, every case is schema-valid, and every adversarial and missing-information case passes fully. Cases that hit service failures are reported as ERROR, not FAIL or PASS; any ERROR makes the run INCONCLUSIVE. Results are written to evidence/eval-results.json with the model name and settings but never the key. The threshold above is fixed now and may change only through a documented spec change.
+
+Success measures: schema validity 100%, adversarial refusal 100%, no secrets in the repository.
+```
+
+**Question 1 (reference-time format):** Should `--now` accept only a local datetime without a UTC offset, or should offset-aware datetimes also be accepted? The input determines how relative dates are interpreted, while `remind_at` is returned without a time-zone offset.
+- A (recommended): require a local ISO datetime without an offset; reject offset-aware values.
+- B: accept an offset and interpret dates in that fixed offset; return the corresponding local wall time without the offset.
+- C: accept offsets and convert to the computer's local time zone.
+
+**My answer:** A (accepted the recommendation). This makes the reference time and the returned local time unambiguous and reproducible without relying on the machine's time zone.
+
+**Question 2 (empty and gibberish input):** How should the agent handle an empty reminder request compared with non-empty gibberish? These cases are part of the evaluation dataset, so their outcomes determine both CLI error handling and the expected evaluation results.
+- A (recommended): empty input is invalid (exit 1, no JSON); gibberish returns `needs_clarification`.
+- B: both return `needs_clarification`.
+- C: both return `refused`.
+
+**My answer:** A (accepted the recommendation). A missing argument is a command-line mistake, while gibberish is a request the user could clarify.
+
+### Round 2
+
+```text
+Focus on these unresolved points and record each decision in the spec:
+1. For reschedule, snooze and cancel, how is the target reminder identified? Proposal: the title identifies it, it must be non-empty for those actions, and with no target named the result is needs_clarification.
+2. A requested time at or before --now: proposal is needs_clarification asking for a future time.
+3. Vague times: proposal is fixed defaults (morning 09:00, afternoon 14:00, evening 18:00, night 21:00); "later" or "soon" with no time means needs_clarification.
+4. Recurrence: proposal is that remind_at is the first occurrence, and reschedule, snooze and cancel always have recurrence none.
+5. Scoring: proposal is that schema is 1 or 0, invariants is passed checks divided by applicable checks, semantic is the fraction of status, action, remind_at and title-keyword checks that pass, and each case runs once per evaluation.
+```
+
+Copilot recorded all five proposals in the spec. Together with the two round 1 decisions, this gives seven recorded decisions in total.
+
+### My notes
+1. **Why round 2 was needed:** Round 1 asked only two questions. Five gaps in the spec were not asked about, so I ran a second round with a focus prompt that states a proposed answer for each. The five gaps were:
+   1. **Target of reschedule, snooze and cancel:** the tool is stateless and the schema has no reminder ID, so "an identified reminder" was undefined. Proposal: the `title` identifies it and must be non-empty for these actions.
+   2. **Time at or before `--now`:** the edge case said it was invalid but gave no outcome. Proposal: `needs_clarification` asking for a future time.
+   3. **Vague times:** "morning", "evening", "later" and "tonight" had no defined handling. Proposal: fixed defaults (09:00, 14:00, 18:00, 21:00), and "later" or "soon" with no time means `needs_clarification`.
+   4. **Recurrence:** it was unclear what `remind_at` means for "every Monday" and which recurrence values reschedule, snooze and cancel may have. Proposal: `remind_at` is the first occurrence, and those three actions always use `none`.
+   5. **Scoring detail:** the 0.4 invariants weight and the 0.3 semantic weight had no defined sub-score, and the model is not fully deterministic even at 0.2. Proposal: schema is 1 or 0, invariants is passed checks divided by applicable checks, semantic is the fraction of status, action, `remind_at` and title-keyword checks that pass, and each case runs once per evaluation.
+2. **Round 1 settled two earlier open points:** the format of `--now` (naive local datetime only) and the empty-input outcome (exit 1 with no JSON, while gibberish returns `needs_clarification`). So the two malformed dataset cases will have different expected outcomes: the empty case expects exit 1, and the harness must treat that as a valid expected result.
+3. **Checklist exceptions:** The spec checklist ended at 13 of 16 items. The three open items are template checks such as "no implementation details" and "written for non-technical stakeholders". They conflict with my own explicit requirements (Python 3.12, `urllib`, Gemini, the evaluation harness), so I left them unchecked on purpose. Leaving them unchecked is correct, because making the spec free of implementation details would mean deleting requirements I was asked to include.
+4. **What changed in the spec:** Copilot reported that all seven decisions (two from round 1, five from round 2) are recorded in the spec. The 0.85 threshold is unchanged, no clarification markers remain, and no hooks were configured.
+5. **Still open:** The case field name for expected title keywords (`title_keywords`) was not asked in either round, and neither were the expected outcomes of the three ambiguous cases. I will settle both when I write `evals/dataset.json`, and any change to the spec must go through a documented spec change.
+6. **Checks after clarification:** I re-ran the `NEEDS CLARIFICATION` search on the spec and no markers remain, as Copilot also reported.
+7. **Commit and push:** <<PASTE the commit message, hash and `git push` result once you have committed>>.
