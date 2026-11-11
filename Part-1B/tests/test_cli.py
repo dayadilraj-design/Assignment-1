@@ -64,7 +64,7 @@ def test_result_statuses_emit_one_compact_json_object(
 
     captured = capsys.readouterr()
     assert exit_code == 0
-    assert captured.stdout == json.dumps(result, separators=(",", ":")) + "\n"
+    assert captured.out == json.dumps(result, separators=(",", ":")) + "\n"
     assert captured.err == ""
     assert transport.calls == 1
 
