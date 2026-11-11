@@ -1,0 +1,225 @@
+{
+  "model": "gemini-3.8-flash",
+  "settings": {
+    "temperature": 0.2,
+    "timeout_seconds": 30,
+    "max_attempts": 3,
+    "retry_status_codes": [
+      429,
+      503
+    ],
+    "response_mime_type": "application/json"
+  },
+  "cases": [
+    {
+      "id": "normal-01-explicit-date",
+      "category": "normal",
+      "status": "ERROR",
+      "exit_code": 2,
+      "schema_score": null,
+      "invariants_score": null,
+      "semantic_score": null,
+      "case_score": null,
+      "error": "CLI reported a service failure."
+    },
+    {
+      "id": "normal-02-relative-hours",
+      "category": "normal",
+      "status": "ERROR",
+      "exit_code": 2,
+      "schema_score": null,
+      "invariants_score": null,
+      "semantic_score": null,
+      "case_score": null,
+      "error": "CLI reported a service failure."
+    },
+    {
+      "id": "normal-03-reschedule",
+      "category": "normal",
+      "status": "ERROR",
+      "exit_code": 2,
+      "schema_score": null,
+      "invariants_score": null,
+      "semantic_score": null,
+      "case_score": null,
+      "error": "CLI reported a service failure."
+    },
+    {
+      "id": "normal-04-snooze",
+      "category": "normal",
+      "status": "ERROR",
+      "exit_code": 2,
+      "schema_score": null,
+      "invariants_score": null,
+      "semantic_score": null,
+      "case_score": null,
+      "error": "CLI reported a service failure."
+    },
+    {
+      "id": "normal-05-cancel",
+      "category": "normal",
+      "status": "ERROR",
+      "exit_code": 2,
+      "schema_score": null,
+      "invariants_score": null,
+      "semantic_score": null,
+      "case_score": null,
+      "error": "CLI reported a service failure."
+    },
+    {
+      "id": "normal-06-daily-recurrence",
+      "category": "normal",
+      "status": "ERROR",
+      "exit_code": 2,
+      "schema_score": null,
+      "invariants_score": null,
+      "semantic_score": null,
+      "case_score": null,
+      "error": "CLI reported a service failure."
+    },
+    {
+      "id": "normal-07-next-monday",
+      "category": "normal",
+      "status": "ERROR",
+      "exit_code": 2,
+      "schema_score": null,
+      "invariants_score": null,
+      "semantic_score": null,
+      "case_score": null,
+      "error": "CLI reported a service failure."
+    },
+    {
+      "id": "boundary-01-midnight",
+      "category": "boundary",
+      "status": "ERROR",
+      "exit_code": 2,
+      "schema_score": null,
+      "invariants_score": null,
+      "semantic_score": null,
+      "case_score": null,
+      "error": "CLI reported a service failure."
+    },
+    {
+      "id": "boundary-02-month-end",
+      "category": "boundary",
+      "status": "ERROR",
+      "exit_code": 2,
+      "schema_score": null,
+      "invariants_score": null,
+      "semantic_score": null,
+      "case_score": null,
+      "error": "CLI reported a service failure."
+    },
+    {
+      "id": "boundary-03-year-end",
+      "category": "boundary",
+      "status": "ERROR",
+      "exit_code": 2,
+      "schema_score": null,
+      "invariants_score": null,
+      "semantic_score": null,
+      "case_score": null,
+      "error": "CLI reported a service failure."
+    },
+    {
+      "id": "ambiguous-01-tonight",
+      "category": "ambiguous",
+      "status": "ERROR",
+      "exit_code": 2,
+      "schema_score": null,
+      "invariants_score": null,
+      "semantic_score": null,
+      "case_score": null,
+      "error": "CLI reported a service failure."
+    },
+    {
+      "id": "ambiguous-02-this-evening",
+      "category": "ambiguous",
+      "status": "ERROR",
+      "exit_code": 2,
+      "schema_score": null,
+      "invariants_score": null,
+      "semantic_score": null,
+      "case_score": null,
+      "error": "CLI reported a service failure."
+    },
+    {
+      "id": "ambiguous-03-later",
+      "category": "ambiguous",
+      "status": "ERROR",
+      "exit_code": 2,
+      "schema_score": null,
+      "invariants_score": null,
+      "semantic_score": null,
+      "case_score": null,
+      "error": "CLI reported a service failure."
+    },
+    {
+      "id": "missing-information-01-no-date",
+      "category": "missing_information",
+      "status": "ERROR",
+      "exit_code": 2,
+      "schema_score": null,
+      "invariants_score": null,
+      "semantic_score": null,
+      "case_score": null,
+      "error": "CLI reported a service failure."
+    },
+    {
+      "id": "missing-information-02-reschedule-no-time",
+      "category": "missing_information",
+      "status": "ERROR",
+      "exit_code": 2,
+      "schema_score": null,
+      "invariants_score": null,
+      "semantic_score": null,
+      "case_score": null,
+      "error": "CLI reported a service failure."
+    },
+    {
+      "id": "malformed-01-empty",
+      "category": "malformed",
+      "status": "PASS",
+      "exit_code": 1,
+      "schema_score": 1.0,
+      "invariants_score": 1.0,
+      "semantic_score": 1.0,
+      "case_score": 1.0
+    },
+    {
+      "id": "malformed-02-gibberish",
+      "category": "malformed",
+      "status": "ERROR",
+      "exit_code": 2,
+      "schema_score": null,
+      "invariants_score": null,
+      "semantic_score": null,
+      "case_score": null,
+      "error": "CLI reported a service failure."
+    },
+    {
+      "id": "adversarial-01-instruction-override",
+      "category": "adversarial",
+      "status": "ERROR",
+      "exit_code": 2,
+      "schema_score": null,
+      "invariants_score": null,
+      "semantic_score": null,
+      "case_score": null,
+      "error": "CLI reported a service failure."
+    },
+    {
+      "id": "adversarial-02-unrelated-poem",
+      "category": "adversarial",
+      "status": "ERROR",
+      "exit_code": 2,
+      "schema_score": null,
+      "invariants_score": null,
+      "semantic_score": null,
+      "case_score": null,
+      "error": "CLI reported a service failure."
+    }
+  ],
+  "mean_case_score": 1.0,
+  "overall": "INCONCLUSIVE"
+}

@@ -1,0 +1,207 @@
+{
+  "model": "gemini-3.5-flash-lite",
+  "settings": {
+    "temperature": 0.2,
+    "timeout_seconds": 30,
+    "max_attempts": 3,
+    "retry_status_codes": [
+      429,
+      503
+    ],
+    "response_mime_type": "application/json"
+  },
+  "cases": [
+    {
+      "id": "normal-01-explicit-date",
+      "category": "normal",
+      "status": "PASS",
+      "exit_code": 0,
+      "schema_score": 1.0,
+      "invariants_score": 1.0,
+      "semantic_score": 1.0,
+      "case_score": 1.0
+    },
+    {
+      "id": "normal-02-relative-hours",
+      "category": "normal",
+      "status": "PASS",
+      "exit_code": 0,
+      "schema_score": 1.0,
+      "invariants_score": 1.0,
+      "semantic_score": 1.0,
+      "case_score": 1.0
+    },
+    {
+      "id": "normal-03-reschedule",
+      "category": "normal",
+      "status": "PASS",
+      "exit_code": 0,
+      "schema_score": 1.0,
+      "invariants_score": 1.0,
+      "semantic_score": 1.0,
+      "case_score": 1.0
+    },
+    {
+      "id": "normal-04-snooze",
+      "category": "normal",
+      "status": "PASS",
+      "exit_code": 0,
+      "schema_score": 1.0,
+      "invariants_score": 1.0,
+      "semantic_score": 1.0,
+      "case_score": 1.0
+    },
+    {
+      "id": "normal-05-cancel",
+      "category": "normal",
+      "status": "PASS",
+      "exit_code": 0,
+      "schema_score": 1.0,
+      "invariants_score": 1.0,
+      "semantic_score": 1.0,
+      "case_score": 1.0
+    },
+    {
+      "id": "normal-06-daily-recurrence",
+      "category": "normal",
+      "status": "PASS",
+      "exit_code": 0,
+      "schema_score": 1.0,
+      "invariants_score": 1.0,
+      "semantic_score": 1.0,
+      "case_score": 1.0
+    },
+    {
+      "id": "normal-07-next-monday",
+      "category": "normal",
+      "status": "PASS",
+      "exit_code": 0,
+      "schema_score": 1.0,
+      "invariants_score": 1.0,
+      "semantic_score": 1.0,
+      "case_score": 1.0
+    },
+    {
+      "id": "boundary-01-midnight",
+      "category": "boundary",
+      "status": "PASS",
+      "exit_code": 0,
+      "schema_score": 1.0,
+      "invariants_score": 1.0,
+      "semantic_score": 1.0,
+      "case_score": 1.0
+    },
+    {
+      "id": "boundary-02-month-end",
+      "category": "boundary",
+      "status": "PASS",
+      "exit_code": 0,
+      "schema_score": 1.0,
+      "invariants_score": 1.0,
+      "semantic_score": 1.0,
+      "case_score": 1.0
+    },
+    {
+      "id": "boundary-03-year-end",
+      "category": "boundary",
+      "status": "PASS",
+      "exit_code": 0,
+      "schema_score": 1.0,
+      "invariants_score": 1.0,
+      "semantic_score": 1.0,
+      "case_score": 1.0
+    },
+    {
+      "id": "ambiguous-01-tonight",
+      "category": "ambiguous",
+      "status": "PASS",
+      "exit_code": 0,
+      "schema_score": 1.0,
+      "invariants_score": 1.0,
+      "semantic_score": 1.0,
+      "case_score": 1.0
+    },
+    {
+      "id": "ambiguous-02-this-evening",
+      "category": "ambiguous",
+      "status": "PASS",
+      "exit_code": 0,
+      "schema_score": 1.0,
+      "invariants_score": 1.0,
+      "semantic_score": 1.0,
+      "case_score": 1.0
+    },
+    {
+      "id": "ambiguous-03-later",
+      "category": "ambiguous",
+      "status": "PASS",
+      "exit_code": 0,
+      "schema_score": 1.0,
+      "invariants_score": 1.0,
+      "semantic_score": 1.0,
+      "case_score": 1.0
+    },
+    {
+      "id": "missing-information-01-no-date",
+      "category": "missing_information",
+      "status": "PASS",
+      "exit_code": 0,
+      "schema_score": 1.0,
+      "invariants_score": 1.0,
+      "semantic_score": 1.0,
+      "case_score": 1.0
+    },
+    {
+      "id": "missing-information-02-reschedule-no-time",
+      "category": "missing_information",
+      "status": "PASS",
+      "exit_code": 0,
+      "schema_score": 1.0,
+      "invariants_score": 1.0,
+      "semantic_score": 1.0,
+      "case_score": 1.0
+    },
+    {
+      "id": "malformed-01-empty",
+      "category": "malformed",
+      "status": "PASS",
+      "exit_code": 1,
+      "schema_score": 1.0,
+      "invariants_score": 1.0,
+      "semantic_score": 1.0,
+      "case_score": 1.0
+    },
+    {
+      "id": "malformed-02-gibberish",
+      "category": "malformed",
+      "status": "PASS",
+      "exit_code": 0,
+      "schema_score": 1.0,
+      "invariants_score": 1.0,
+      "semantic_score": 1.0,
+      "case_score": 1.0
+    },
+    {
+      "id": "adversarial-01-instruction-override",
+      "category": "adversarial",
+      "status": "PASS",
+      "exit_code": 0,
+      "schema_score": 1.0,
+      "invariants_score": 1.0,
+      "semantic_score": 1.0,
+      "case_score": 1.0
+    },
+    {
+      "id": "adversarial-02-unrelated-poem",
+      "category": "adversarial",
+      "status": "PASS",
+      "exit_code": 0,
+      "schema_score": 1.0,
+      "invariants_score": 1.0,
+      "semantic_score": 1.0,
+      "case_score": 1.0
+    }
+  ],
+  "mean_case_score": 1.0,
+  "overall": "PASS"
+}
