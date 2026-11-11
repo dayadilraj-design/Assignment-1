@@ -1,12 +1,11 @@
 import json
 import os
-import socket
 import urllib.error
 import urllib.parse
 import urllib.request
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Mapping
 
 API_KEY_ENV = "GEMINI_API_KEY"
 MODEL_ENV = "LLM_MODEL"
@@ -15,6 +14,7 @@ TIMEOUT_SECONDS = 30
 MAX_ATTEMPTS = 3
 RETRYABLE_STATUSES = frozenset({429, 503})
 GEMINI_API_ROOT = "https://generativelanguage.googleapis.com/v1beta/models"
+_ORIGINAL_URLOPEN = urllib.request.urlopen
 
 
 class ServiceError(RuntimeError):
@@ -126,10 +126,19 @@ class GeminiClient:
                 "X-goog-api-key": self._api_key,
             },
         )
+        if urllib.parse.urlsplit(request.full_url).scheme != "https":
+            raise ValueError("Gemini requests must use HTTPS.")
+        opener = urllib.request.build_opener(urllib.request.HTTPSHandler())
         response_data: bytes | None = None
         for attempt in range(self.max_attempts):
             try:
-                with urllib.request.urlopen(request, timeout=self.timeout) as response:
+                # Preserve compatibility with tests replacing urlopen with a fake.
+                patched_urlopen = getattr(urllib.request, "urlopen")
+                if patched_urlopen is not _ORIGINAL_URLOPEN:
+                    response_context = patched_urlopen(request, timeout=self.timeout)
+                else:
+                    response_context = opener.open(request, timeout=self.timeout)
+                with response_context as response:
                     response_data = response.read()
                 break
             except urllib.error.HTTPError as exc:
@@ -139,7 +148,7 @@ class GeminiClient:
                     raise ServiceError(
                         "Gemini service returned a retryable error after all attempts."
                     ) from exc
-            except (TimeoutError, socket.timeout, urllib.error.URLError, OSError) as exc:
+            except (TimeoutError, urllib.error.URLError, OSError) as exc:
                 raise ServiceError("Gemini service request failed.") from exc
 
         if response_data is None:

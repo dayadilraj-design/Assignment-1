@@ -2,9 +2,9 @@ import json
 from datetime import datetime
 
 import pytest
-from reminder_agent.client import ServiceError
 
 from reminder_agent import cli
+from reminder_agent.client import ServiceError
 
 NOW = "2026-11-11T09:00:00"
 

@@ -2,7 +2,6 @@ import argparse
 import json
 import sys
 from collections.abc import Sequence
-from datetime import datetime
 from urllib.error import HTTPError
 
 from .client import ServiceError

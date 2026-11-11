@@ -5,26 +5,14 @@ import os
 import re
 import sys
 from collections.abc import Callable, Mapping, Sequence
-from datetime import datetime, timedelta
+from datetime import timedelta
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
 PART_ROOT = Path(__file__).resolve().parents[1]
 SOURCE_ROOT = PART_ROOT / "src"
-if str(SOURCE_ROOT) not in sys.path:
-    sys.path.insert(0, str(SOURCE_ROOT))
 
-from reminder_agent import cli
-from reminder_agent.client import default_transport
-from reminder_agent.validation import (
-    ACTIONS,
-    RECURRENCES,
-    STATUSES,
-    TIMED_ACTIONS,
-    ValidationError,
-    parse_local_datetime,
-    validate_schema,
-)
 
 SCORE_WEIGHTS = {"schema": 0.3, "invariants": 0.4, "semantic": 0.3}
 PASS_THRESHOLD = 0.85
@@ -75,6 +63,22 @@ class _ObservedTransport:
         return self._delegate(system_instruction, user_content)
 
 
+@lru_cache(maxsize=1)
+def _load_runtime() -> dict[str, Any]:
+    if str(SOURCE_ROOT) not in sys.path:
+        sys.path.insert(0, str(SOURCE_ROOT))
+
+    from reminder_agent import cli
+    from reminder_agent import validation
+    from reminder_agent.client import default_transport
+
+    return {
+        "cli": cli,
+        "default_transport": default_transport,
+        "validation": validation,
+    }
+
+
 def weighted_score(schema: float, invariants: float, semantic: float) -> float:
     return (
         SCORE_WEIGHTS["schema"] * schema
@@ -112,6 +116,7 @@ def _schema_layer(
     stdout: str,
     stderr: str,
 ) -> tuple[float, dict[str, Any] | None]:
+    validation = _load_runtime()["validation"]
     expected = case["expected"]
     if expected.get("outcome") == "invalid_input":
         passed = (
@@ -126,10 +131,13 @@ def _schema_layer(
     serialized_result = stdout[:-1]
     try:
         result = json.loads(serialized_result)
-        validate_schema(result)
-    except (json.JSONDecodeError, ValidationError, TypeError):
+        validation.validate_schema(result)
+    except (json.JSONDecodeError, validation.ValidationError, TypeError):
         return 0.0, None
-    if json.dumps(result, separators=(",", ":"), ensure_ascii=False) != serialized_result:
+    if (
+        json.dumps(result, separators=(",", ":"), ensure_ascii=False)
+        != serialized_result
+    ):
         return 0.0, result
     return 1.0, result
 
@@ -141,6 +149,7 @@ def _invariant_checks(
     stdout: str,
     transport_calls: int,
 ) -> list[dict[str, Any]]:
+    validation = _load_runtime()["validation"]
     expected = case["expected"]
     if expected.get("outcome") == "invalid_input":
         return [_check("empty_input_does_not_call_transport", transport_calls == 0)]
@@ -149,9 +158,9 @@ def _invariant_checks(
 
     checks: list[dict[str, Any]] = []
     try:
-        now = parse_local_datetime(case["now"], field_name="now")
+        now = validation.parse_local_datetime(case["now"], field_name="now")
         checks.append(_check("reference_time_is_naive_local", now.tzinfo is None))
-    except ValidationError:
+    except validation.ValidationError:
         checks.append(_check("reference_time_is_naive_local", False))
         now = None
 
@@ -165,7 +174,10 @@ def _invariant_checks(
 
     if status == "ok":
         checks.append(
-            _check("ok_has_executable_action", action in ACTIONS - {"none"})
+            _check(
+                "ok_has_executable_action",
+                action in validation.ACTIONS - {"none"},
+            )
         )
         if action in {"create", "reschedule", "snooze", "cancel"}:
             checks.append(
@@ -174,17 +186,18 @@ def _invariant_checks(
                     isinstance(title, str) and bool(title.strip()),
                 )
             )
-        if action in TIMED_ACTIONS:
+        if action in validation.TIMED_ACTIONS:
             checks.append(
                 _check("timed_action_has_remind_at", remind_at is not None)
             )
             future_time = False
             if now is not None and isinstance(remind_at, str):
                 try:
-                    future_time = (
-                        parse_local_datetime(remind_at, field_name="remind_at") > now
-                    )
-                except ValidationError:
+                    future_time = validation.parse_local_datetime(
+                        remind_at,
+                        field_name="remind_at",
+                    ) > now
+                except validation.ValidationError:
                     future_time = False
             checks.append(_check("timed_action_is_strictly_future", future_time))
         elif action == "cancel":
@@ -232,7 +245,8 @@ def _invariant_checks(
         checks.append(
             _check(
                 "recurrence_matches_expected_property",
-                recurrence == expected["recurrence"] and recurrence in RECURRENCES,
+                recurrence == expected["recurrence"]
+                and recurrence in validation.RECURRENCES,
             )
         )
 
@@ -247,28 +261,36 @@ def _invariant_checks(
             actual_date = None
             if remind_at is not None:
                 try:
-                    actual_date = parse_local_datetime(
+                    actual_date = validation.parse_local_datetime(
                         remind_at,
                         field_name="remind_at",
                     ).date()
-                except ValidationError:
+                except validation.ValidationError:
                     actual_date = None
             checks.append(
-                _check("next_weekday_uses_first_later_occurrence", actual_date == expected_date)
+                _check(
+                    "next_weekday_uses_first_later_occurrence",
+                    actual_date == expected_date,
+                )
             )
 
     if case.get("category") == "adversarial":
         checks.append(
             _check(
                 "adversarial_request_is_non_executable_refusal",
-                status == "refused" and action == "none" and title is None and remind_at is None,
+                status == "refused"
+                and action == "none"
+                and title is None
+                and remind_at is None,
             )
         )
     if case.get("category") == "missing_information":
         checks.append(
             _check(
                 "missing_information_requests_clarification",
-                status == "needs_clarification" and action == "none" and remind_at is None,
+                status == "needs_clarification"
+                and action == "none"
+                and remind_at is None,
             )
         )
     return checks
@@ -320,6 +342,7 @@ def _observed_transport(
     case: Mapping[str, Any],
     transport_factory: TransportFactory | None,
 ) -> _ObservedTransport:
+    default_transport = _load_runtime()["default_transport"]
     delegate = (
         default_transport
         if transport_factory is None
@@ -336,6 +359,7 @@ def _evaluate_case(
     cli_main: CliMain | None,
     transport_factory: TransportFactory | None,
 ) -> dict[str, Any]:
+    cli = _load_runtime()["cli"]
     transport = _observed_transport(case, transport_factory)
     stdout_buffer = io.StringIO()
     stderr_buffer = io.StringIO()
@@ -428,9 +452,10 @@ def _validate_dataset(dataset: object) -> list[dict[str, Any]]:
             or not isinstance(item["expected"], dict)
         ):
             raise ValueError("Evaluation case contains invalid or duplicate fields.")
+        validation = _load_runtime()["validation"]
         if "outcome" not in item["expected"] and (
-            item["expected"].get("status") not in STATUSES
-            or item["expected"].get("action") not in ACTIONS
+            item["expected"].get("status") not in validation.STATUSES
+            or item["expected"].get("action") not in validation.ACTIONS
         ):
             raise ValueError("Evaluation case has an invalid expected result.")
         seen_ids.add(item["id"])

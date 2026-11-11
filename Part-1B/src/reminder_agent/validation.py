@@ -37,9 +37,13 @@ def parse_local_datetime(value: object, *, field_name: str) -> datetime:
     try:
         parsed = datetime.strptime(value, "%Y-%m-%dT%H:%M:%S")
     except ValueError as exc:
-        raise ValidationError(f"{field_name} must be a real calendar datetime.") from exc
+        raise ValidationError(
+            f"{field_name} must be a real calendar datetime."
+        ) from exc
     if parsed.strftime("%Y-%m-%dT%H:%M:%S") != value:
-        raise ValidationError(f"{field_name} must use YYYY-MM-DDTHH:MM:SS local format.")
+        raise ValidationError(
+            f"{field_name} must use YYYY-MM-DDTHH:MM:SS local format."
+        )
     return parsed
 
 
@@ -52,7 +56,10 @@ def validate_schema(result: object) -> dict[str, object]:
         raise ValidationError("Result status is not allowed.")
     if not isinstance(result["action"], str) or result["action"] not in ACTIONS:
         raise ValidationError("Result action is not allowed.")
-    if not isinstance(result["recurrence"], str) or result["recurrence"] not in RECURRENCES:
+    if (
+        not isinstance(result["recurrence"], str)
+        or result["recurrence"] not in RECURRENCES
+    ):
         raise ValidationError("Result recurrence is not allowed.")
 
     title = result["title"]
@@ -98,9 +105,13 @@ def validate_result(result: object, now: datetime) -> dict[str, object]:
         elif action == "cancel" and remind_at is not None:
             raise ValidationError("A cancel result must have a null remind_at.")
         if action in TARGET_ACTIONS and recurrence != "none":
-            raise ValidationError("Reschedule, snooze, and cancel recurrence must be none.")
+            raise ValidationError(
+                "Reschedule, snooze, and cancel recurrence must be none."
+            )
         if question is not None or refusal_reason is not None:
-            raise ValidationError("An ok result cannot include clarification or refusal text.")
+            raise ValidationError(
+                "An ok result cannot include clarification or refusal text."
+            )
         return validated
 
     if status == "needs_clarification":
@@ -112,7 +123,9 @@ def validate_result(result: object, now: datetime) -> dict[str, object]:
             or not question.endswith("?")
             or refusal_reason is not None
         ):
-            raise ValidationError("The needs_clarification result invariants are not met.")
+            raise ValidationError(
+                "The needs_clarification result invariants are not met."
+            )
         return validated
 
     if (
