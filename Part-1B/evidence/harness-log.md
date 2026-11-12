@@ -59,8 +59,22 @@ Each run's result is kept as its own file in `evidence/`.
 ## 7. Decision
 - **ACCEPT** run 4 (`3220cec`, 22:03, "first conclusive evaluation PASS 19/19") as the evaluation result.
 - **Reasoning:** it is the first run with no service errors, so it is the first conclusive one. All 19 cases passed, including the empty-input contract and every adversarial and missing-information case, and the mean score is 1.0, above the fixed 0.85 threshold. The dataset, expected values, threshold and scoring rules were not changed between the runs, so the earlier inconclusive runs and the final pass are comparable. The quality gates are also clean (section 4). I also checked that the API key is not in the repository: I searched the working tree and all of the git history for the actual key value from my `.env`, and found no key value.
-- **Limit of this result:** the pass was reached on `gemini-3.5-flash-lite`, a different model from runs 1 and 2. A 1.0 mean on 19 cases shows the agent meets the specification on this dataset, not that it is perfect on all inputs.
-- **Tags:** `1B-initial-generation` (the first generated implementation) and `1B-final` both exist in the repository. At the end, `1B-final` and `HEAD` are the same commit (`58c9f9d`), the working tree is clean and up to date with `origin/main`, and `.env` is ignored and not tracked.
+- **Limit of this result:** the pass was reached on `gemini-3.5-flash-lite`, a different model from runs 1 and 2. A 1.0 mean on 19 cases shows the agent meets the specification on this dataset, not that it is perfect on all inputs. The residual risks are listed in section 7a.
+- **Tags:** `1B-initial-generation` (the first generated implementation) and `1B-final` both exist in the repository. At the end, `1B-final` and `HEAD` are the same commit, the working tree is clean and up to date with `origin/main`, and `.env` is ignored and not tracked.
+
+## 7a. Evidence added after the evaluation (12 Nov)
+
+I added this on 12 November, after the accepted run. None of it changes the evaluation itself. The dataset, the expected values, the threshold and the evaluators were not touched.
+
+- **Layer results for run 4 (19 cases):** the schema average was 1.0, the invariants average was 1.0 and the semantic average was 1.0. So the mean case score was 1.0, against the fixed threshold of 0.85.
+- **No evaluation FAIL, and no evaluation-driven repair:** no run produced a `FAIL`. Runs 1 to 3 were `INCONCLUSIVE` because of rate limits, and run 4 was a `PASS`. So I did not need any harness-driven repair of the application. The two repair sets in this log were for other reasons: the quality gates (ruff and bandit) and the harness configuration defect.
+- **Snapshots of the code at the two tags:** `evidence/initial-generation/` holds `src`, `.harness` and `evals` as they were at the tag `1B-initial-generation`. `evidence/final-generation/` holds the same three folders at the tag `1B-final`. I extracted both from git without editing them, and I added them on 12 November, after the evaluation. I did not copy `tests`, because it already exists in git at each tag, and a second copy inside `evidence/` would also be collected by pytest. Comparing the two snapshots shows everything that changed after the first generation, including the lint refactor of `.harness/run_eval.py` and the configuration fix described in sections 4 and 5.
+- **Traceability:** `evidence/traceability.md` maps each evaluation case to the requirement in the specification that it checks. I wrote it after the dataset was locked, so it describes the dataset and did not shape it, and I did not change the dataset while writing it. AI helped me draft the file, and I reviewed it myself against the specification.
+- **Residual risks:**
+  - There are only 19 cases, and each case ran once, so a 1.0 score is a small sample.
+  - The only conclusive pass is on one model, `gemini-3.5-flash-lite`. The other models I tried were rate limited, so I have no result for them.
+  - The title and clarification checks are keyword and rule based. They catch missing keywords and wrong formats, but they do not check whether a title or a question really means the right thing.
+  - The model is not deterministic even at temperature 0.2, so a later run could score differently, and I have not measured how much.
 
 ## 8. What I would do differently
 - Run `ruff` and `bandit` as soon as the implementation is generated, and before tagging, so the gates do not fail on routine style problems and cost two repair attempts.
@@ -68,3 +82,4 @@ Each run's result is kept as its own file in `evidence/`.
 - Test that the harness reads `.env` before the first live run. A small test would have caught the "LLM_MODEL must be configured" defect without a live call.
 - Check model availability and rate limits with a single case before a full 19-case run. Runs 1 to 3 were spent on rate limits, not on testing the agent.
 - Report the number of cases that actually ran next to the mean, so an inconclusive run can never look like a pass in the evidence files.
+- Run the evaluation more than once on the passing model, to see how much the results vary, which I did not do here.
